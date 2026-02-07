@@ -14,7 +14,6 @@ local GameModeService = require(ReplicatedStorage.Modules.GameModeService)
 local CrouchController = require(script.Parent.Parent.Movement.CrouchController)
 local SprintController = require(script.Parent.Parent.Movement.SprintController)
 local AudioService = require(ReplicatedStorage.Modules.Audio.AudioService)
-local Keybinds = require(ReplicatedStorage.Modules.Keybinds)
 local Settings = require(ReplicatedStorage.Modules.Settings)
 local MatchStateClient = require(ReplicatedStorage.Modules.MatchStateClient)
 local InputManager = require(ReplicatedStorage.Modules.InputManager)
@@ -313,7 +312,6 @@ local weaponAmmo: { [string]: number } = {}
 
 -- forward declarations
 local UpdateCrosshair: () -> ()
-local SwitchToSlot: (slotIndex: number) -> ()
 
 -- Get player's current movement speed
 local function GetPlayerSpeed(): number
@@ -1230,20 +1228,7 @@ MatchStateClient.OnCombatChanged(function(enabled)
 	end
 end)
 
--- Slot keybinds (dynamically read from Keybinds module)
-local weaponSlotActions = { "weapon1", "weapon2", "weapon3", "weapon4", "weapon5" }
-
-local function getSlotIndexForKey(keyCode: Enum.KeyCode): number?
-	for slotIndex, action in weaponSlotActions do
-		local boundKey = Keybinds.Get(action)
-		if boundKey and keyCode == boundKey then
-			return slotIndex
-		end
-	end
-	return nil
-end
-
--- Input handling
+-- Input handling (weapon slot selection is handled by Roblox's built-in tool system)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	-- Don't process any gun input while settings menu is open
 	if Settings.IsMenuOpen() then
@@ -1251,15 +1236,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 	if not canUseCombat() then
 		return
-	end
-
-	-- Slot keys - handle all slots uniformly (weapons, consumables, empty)
-	-- These keys now ALWAYS work and auto-switch to Gun mode (Fortnite-style)
-	if not gameProcessed then
-		local slotIndex = getSlotIndexForKey(input.KeyCode)
-		if slotIndex then
-			SwitchToSlot(slotIndex)
-		end
 	end
 
 	-- Left mouse button to shoot (allow even when camera is processing)
@@ -1545,129 +1521,6 @@ end)
 -- Loadout System
 --------------------------------------------------
 
--- Helper to count weapons in loadout (sparse array safe)
-local function getWeaponCount(): number
-	local count = 0
-	for i = 1, 5 do
-		if loadout[i] then
-			count += 1
-		end
-	end
-	return count
-end
-
--- Helper to count occupied slots (weapons + consumables) for scroll navigation
-local function getOccupiedSlotCount(): number
-	local count = 0
-	for i = 1, 5 do
-		if occupiedSlots[i] then
-			count += 1
-		end
-	end
-	return count
-end
-
--- Helper to check if a slot has a weapon (kept for potential future use)
-local function _slotHasWeapon(slotIndex: number): boolean
-	return slotIndex >= 1 and slotIndex <= 5 and loadout[slotIndex] ~= nil
-end
-
--- Switch to a specific weapon slot
-function SwitchToSlot(slotIndex: number)
-	if not canUseCombat() then
-		return
-	end
-	if slotIndex < 1 or slotIndex > 5 then
-		return
-	end
-
-	-- Check if this slot has a weapon
-	local gunName = loadout[slotIndex]
-	if not gunName then
-		-- Slot is empty or has a consumable, just update current slot without equipping
-		currentSlot = slotIndex
-		if state.equipped then
-			UnequipGun()
-		end
-		notifyAmmoUI("SlotChanged", slotIndex + 1, loadout)
-		return
-	end
-
-	-- already on this slot with same weapon
-	if currentSlot == slotIndex and state.equipped then
-		return
-	end
-
-	-- unequip current weapon
-	if state.equipped then
-		UnequipGun()
-	end
-
-	-- equip weapon from slot
-	currentSlot = slotIndex
-	if GunConfig.Guns[gunName] then
-		AudioService.PlayWeaponSwitch(gunName)
-		EquipGun(gunName)
-
-		-- sync roblox hotbar by equipping the matching tool
-		local character = player.Character
-		local backpack = player:FindFirstChild("Backpack")
-		if character and backpack then
-			local humanoid = character:FindFirstChildOfClass("Humanoid")
-			if humanoid then
-				-- find the tool in backpack or character
-				for _, child in backpack:GetChildren() do
-					if child:IsA("Tool") and child:GetAttribute("GunName") == gunName then
-						humanoid:EquipTool(child)
-						break
-					end
-				end
-			end
-		end
-	end
-
-	notifyAmmoUI("SlotChanged", slotIndex + 1, loadout)
-end
-
--- Switch to next slot (skips empty slots, includes consumables)
-local function SwitchToNextWeapon()
-	if getOccupiedSlotCount() == 0 then
-		return
-	end
-
-	-- Find next occupied slot (weapon or consumable)
-	local nextSlot = currentSlot
-	for _ = 1, 5 do
-		nextSlot = nextSlot + 1
-		if nextSlot > 5 then
-			nextSlot = 1
-		end
-		if occupiedSlots[nextSlot] then
-			SwitchToSlot(nextSlot)
-			return
-		end
-	end
-end
-
--- Switch to previous slot (skips empty slots, includes consumables)
-local function SwitchToPreviousWeapon()
-	if getOccupiedSlotCount() == 0 then
-		return
-	end
-
-	-- Find previous occupied slot (weapon or consumable)
-	local prevSlot = currentSlot
-	for _ = 1, 5 do
-		prevSlot = prevSlot - 1
-		if prevSlot < 1 then
-			prevSlot = 5
-		end
-		if occupiedSlots[prevSlot] then
-			SwitchToSlot(prevSlot)
-			return
-		end
-	end
-end
 
 -- Handle receiving loadout from server
 -- NOTE: weapons array preserves slot positions (nil for empty/consumable slots)
@@ -1774,31 +1627,25 @@ InventoryChangedRemote.OnClientEvent:Connect(function(inventory)
 			AudioService.PlayWeaponSwitch(expectedGun)
 		end
 		EquipGun(expectedGun)
-	end
 
-	-- NOTE: Do NOT call notifyAmmoUI("SlotChanged") here to avoid feedback loop
-	-- HotbarUI already receives InventoryChanged and updates its own state
-end)
-
--- Scroll wheel to switch weapons
-UserInputService.InputChanged:Connect(function(input, gameProcessed)
-	if gameProcessed then
-		return
-	end
-	if not canUseCombat() then
-		return
-	end
-
-	if input.UserInputType == Enum.UserInputType.MouseWheel then
-		if GameModeService.IsGunMode() and getWeaponCount() > 1 then
-			if input.Position.Z > 0 then
-				SwitchToPreviousWeapon()
-			else
-				SwitchToNextWeapon()
+		-- Sync Roblox toolbar by equipping the matching tool
+		local character = player.Character
+		local backpackRef = player:FindFirstChild("Backpack")
+		if character and backpackRef then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				for _, child in backpackRef:GetChildren() do
+					if child:IsA("Tool") and child:GetAttribute("GunName") == expectedGun then
+						humanoid:EquipTool(child)
+						break
+					end
+				end
 			end
 		end
 	end
 end)
+
+-- Scroll wheel weapon switching handled by Roblox's built-in tool system
 
 -- Set up sprint blocking callback (cannot sprint while ADS or firing)
 SprintController.SetCanSprintCallback(function(): boolean
@@ -1863,67 +1710,7 @@ InputManager.BindAction("Reload", function(_actionName, inputState, _inputObject
 	return Enum.ContextActionResult.Sink
 end, false)
 
--- Weapon slot switching (DPad on gamepad)
-InputManager.BindAction("Weapon1", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	-- SwitchToSlot handles empty slots gracefully
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(1)
-	return Enum.ContextActionResult.Sink
-end, false)
-
-InputManager.BindAction("Weapon2", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(2)
-	return Enum.ContextActionResult.Sink
-end, false)
-
-InputManager.BindAction("Weapon3", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(3)
-	return Enum.ContextActionResult.Sink
-end, false)
-
-InputManager.BindAction("Weapon4", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(4)
-	return Enum.ContextActionResult.Sink
-end, false)
-
-InputManager.BindAction("Weapon5", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(5)
-	return Enum.ContextActionResult.Sink
-end, false)
+-- Weapon slot switching handled by Roblox's built-in tool system (number keys + DPad)
 
 -- Force aim assist target update on respawn
 player.CharacterAdded:Connect(function()
@@ -1967,19 +1754,30 @@ local function bindToolEvents(tool: Tool)
 	end
 
 	tool.Equipped:Connect(function()
-		-- skip if keyboard handler already equipped this gun
+		-- skip if already equipped with this gun
 		if state.equipped and state.currentGun == gunName then
 			return
 		end
 		if state.equipped then
 			UnequipGun()
 		end
+
+		-- Update current slot from tool attribute for UI tracking
+		local slotIndex = tool:GetAttribute("SlotIndex")
+		if slotIndex then
+			currentSlot = slotIndex
+		end
+
+		-- Play weapon switch sound
+		AudioService.PlayWeaponSwitch(gunName)
 		EquipGun(gunName)
+
+		-- Notify ammo UI of slot change
+		notifyAmmoUI("SlotChanged", currentSlot, loadout)
 	end)
 
 	tool.Unequipped:Connect(function()
 		-- only unequip if we're still holding this specific gun
-		-- prevents race condition where keyboard handler already switched weapons
 		if state.equipped and state.currentGun == gunName then
 			UnequipGun()
 		end
