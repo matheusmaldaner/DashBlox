@@ -2085,4 +2085,70 @@ ReloadAllWeaponsRemote.OnClientEvent:Connect(function()
 	print("[GunController] All weapons reloaded")
 end)
 
+--------------------------------------------------
+-- Tool Equip/Unequip Bridge
+-- when player equips a weapon tool from the backpack/hotbar,
+-- route it through the existing EquipGun/UnequipGun flow
+--------------------------------------------------
+
+local function bindToolEvents(tool: Tool)
+	local gunName = tool:GetAttribute("GunName")
+	if not gunName or not GunConfig.Guns[gunName] then
+		return
+	end
+
+	tool.Equipped:Connect(function()
+		if state.equipped then
+			UnequipGun()
+		end
+		EquipGun(gunName)
+	end)
+
+	tool.Unequipped:Connect(function()
+		if state.equipped and state.currentGun == gunName then
+			UnequipGun()
+		end
+	end)
+end
+
+-- bind tools already in backpack
+local backpack = player:WaitForChild("Backpack", 10)
+if backpack then
+	for _, child in backpack:GetChildren() do
+		if child:IsA("Tool") then
+			bindToolEvents(child)
+		end
+	end
+
+	-- bind tools added later (server creates them after character spawns)
+	backpack.ChildAdded:Connect(function(child)
+		if child:IsA("Tool") then
+			bindToolEvents(child)
+		end
+	end)
+end
+
+-- also bind tools that are already equipped (in character) on respawn
+local function bindCharacterTools(character: Model)
+	for _, child in character:GetChildren() do
+		if child:IsA("Tool") then
+			bindToolEvents(child)
+		end
+	end
+
+	character.ChildAdded:Connect(function(child)
+		if child:IsA("Tool") then
+			bindToolEvents(child)
+		end
+	end)
+end
+
+player.CharacterAdded:Connect(function(character)
+	bindCharacterTools(character)
+end)
+
+if player.Character then
+	bindCharacterTools(player.Character)
+end
+
 print("[GunController] Initialized")
