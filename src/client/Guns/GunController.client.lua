@@ -2,12 +2,10 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GunConfig = require(ReplicatedStorage.Modules.Guns.GunConfig)
 local GunUtility = require(ReplicatedStorage.Modules.Guns.GunUtility)
-local ADSState = require(ReplicatedStorage.Modules.Guns.ADSState)
 local CrosshairController = require(script.Parent.CrosshairController)
 local RemoteService = require(ReplicatedStorage.Modules.RemoteService)
 local GameModeService = require(ReplicatedStorage.Modules.GameModeService)
@@ -22,7 +20,6 @@ local AimAssist = require(ReplicatedStorage.Modules.AimAssist)
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera :: Camera
 
-local DEFAULT_FOV = 70
 local EQUIPPED_GUN_NAME = "EquippedGun"
 
 -- ammo ui bridge (created by HotbarUI if it exists)
@@ -181,73 +178,12 @@ local state = {
 	currentGun = nil :: string?,
 	ammo = 0,
 	isReloading = false,
-	isADS = false,
 	lastFireTime = 0,
 	weaponModel = nil :: Model?,
 	isFiring = false,
 	currentRecoil = 0, -- accumulated recoil spread from sustained fire
 }
 local isAlive = true
-
--- Sniper scope UI state
-local originalTransparencies: { [BasePart]: number } = {}
-
--- Get the sniper scope frame from FightGUI
-local function GetSniperScopeFrame(): Frame?
-	local playerGui = player:FindFirstChild("PlayerGui") :: PlayerGui?
-	if not playerGui then
-		return nil
-	end
-
-	local fightGui = playerGui:FindFirstChild("FightGUI") :: ScreenGui?
-	if not fightGui then
-		return nil
-	end
-
-	return fightGui:FindFirstChild("SniperScope") :: Frame?
-end
-
--- Show sniper scope overlay UI
-local function ShowSniperScopeUI()
-	local scopeFrame = GetSniperScopeFrame()
-	if scopeFrame then
-		scopeFrame.Visible = true
-	end
-end
-
--- Hide sniper scope overlay UI
-local function HideSniperScopeUI()
-	local scopeFrame = GetSniperScopeFrame()
-	if scopeFrame then
-		scopeFrame.Visible = false
-	end
-end
-
--- Set player character transparency
-local function SetCharacterTransparency(transparency: number)
-	local character = player.Character
-	if not character then
-		return
-	end
-
-	for _, part in character:GetDescendants() do
-		if part:IsA("BasePart") then
-			-- Store original transparency on first call
-			if transparency > 0 and originalTransparencies[part] == nil then
-				originalTransparencies[part] = part.LocalTransparencyModifier
-			end
-
-			-- Apply transparency (1 = invisible)
-			part.LocalTransparencyModifier = transparency
-
-			-- Restore original when transparency is 0
-			if transparency == 0 and originalTransparencies[part] ~= nil then
-				part.LocalTransparencyModifier = originalTransparencies[part]
-				originalTransparencies[part] = nil
-			end
-		end
-	end
-end
 
 -- Get the equipped gun model from the player's character
 local function GetEquippedGunModel(): Model?
@@ -264,24 +200,6 @@ local function GetEquippedGunModel(): Model?
 	return nil
 end
 
--- Set weapon model transparency
-local function SetWeaponTransparency(transparency: number)
-	local weaponModel = state.weaponModel
-	if not weaponModel then
-		weaponModel = GetEquippedGunModel()
-	end
-
-	if not weaponModel then
-		return
-	end
-
-	for _, part in weaponModel:GetDescendants() do
-		if part:IsA("BasePart") then
-			part.LocalTransparencyModifier = transparency
-		end
-	end
-end
-
 -- AnimationService (optional)
 local AnimationService = nil
 task.spawn(function()
@@ -289,7 +207,7 @@ task.spawn(function()
 	if animationFolder then
 		AnimationService = require(animationFolder:WaitForChild("AnimationService"))
 		if state.equipped then
-			AnimationService.SetActionState(if state.isADS then "ADS" else "HoldGun")
+			AnimationService.SetActionState("HoldGun")
 		end
 	end
 end)
@@ -828,7 +746,8 @@ local function EquipGun(gunName: string)
 		end)
 	end
 
-	-- Show crosshair
+	-- Hide mouse cursor and show crosshair
+	UserInputService.MouseIconEnabled = false
 	CrosshairController.Show()
 	UpdateCrosshair()
 
@@ -850,24 +769,7 @@ local function UnequipGun()
 		weaponAmmo[state.currentGun] = state.ammo
 	end
 
-	-- Check if sniper scoped before resetting state
-	local wasSniperScoped = state.isADS and state.currentGun == "Sniper"
-
 	state.weaponModel = nil
-
-	-- Reset ADS if active
-	if state.isADS then
-		state.isADS = false
-		ADSState.SetADS(false, nil, 1.0)
-		TweenService:Create(camera, TweenInfo.new(0.2), { FieldOfView = DEFAULT_FOV }):Play()
-
-		-- Clean up sniper scope if it was active
-		if wasSniperScoped then
-			HideSniperScopeUI()
-			SetCharacterTransparency(0)
-			SetWeaponTransparency(0)
-		end
-	end
 
 	-- Update state
 	state.equipped = false
@@ -879,7 +781,8 @@ local function UnequipGun()
 	-- Tell server we unequipped
 	UnequipGunRemote:FireServer()
 
-	-- Hide crosshair
+	-- Restore mouse cursor and hide crosshair
+	UserInputService.MouseIconEnabled = true
 	CrosshairController.Hide()
 
 	-- Notify AmmoUI
@@ -922,23 +825,6 @@ local function Reload()
 
 	state.isReloading = true
 	state.isFiring = false -- stop firing during reload
-
-	-- Exit ADS during reload
-	if state.isADS then
-		local wasSniper = state.currentGun == "Sniper"
-		state.isADS = false
-		ADSState.SetADS(false, nil, 1.0)
-		TweenService:Create(camera, TweenInfo.new(0.2), { FieldOfView = DEFAULT_FOV }):Play()
-		SetGunActionState("HoldGun")
-
-		-- Clean up sniper scope if it was active
-		if wasSniper then
-			HideSniperScopeUI()
-			SetCharacterTransparency(0)
-			SetWeaponTransparency(0)
-			CrosshairController.Show()
-		end
-	end
 
 	-- Play reload sound
 	AudioService.PlayWeaponReload(state.currentGun)
@@ -983,7 +869,7 @@ UpdateCrosshair = function()
 	local playerState: GunUtility.PlayerState = {
 		isMoving = GetPlayerSpeed() > 0.5,
 		moveSpeed = GetPlayerSpeed(),
-		isADS = state.isADS,
+		isADS = false,
 		isCrouching = CrouchController.IsCrouching(),
 		isSprinting = SprintController.IsSprinting(),
 	}
@@ -1047,7 +933,7 @@ local function Shoot()
 	local playerState: GunUtility.PlayerState = {
 		isMoving = GetPlayerSpeed() > 0.5,
 		moveSpeed = GetPlayerSpeed(),
-		isADS = state.isADS,
+		isADS = false,
 		isCrouching = CrouchController.IsCrouching(),
 		isSprinting = SprintController.IsSprinting(),
 	}
@@ -1148,79 +1034,6 @@ local function Shoot()
 	state.currentRecoil = math.min(state.currentRecoil + gunStats.RecoilPerShot, gunStats.MaxRecoilSpread)
 end
 
--- Enter ADS (Aim Down Sights)
-local function EnterADS()
-	if not canUseCombat() then
-		return
-	end
-	if not isAlive then
-		return
-	end
-	if not state.equipped or state.isADS or not state.currentGun then
-		return
-	end
-
-	local gunStats = GunConfig.Guns[state.currentGun]
-	if not gunStats then
-		return
-	end
-
-	-- Cancel sprint when entering ADS (Fortnite-style)
-	SprintController.CancelSprint()
-
-	state.isADS = true
-
-	-- Update shared ADS state for camera sensitivity
-	ADSState.SetADS(true, state.currentGun, gunStats.ADSSensitivityMultiplier)
-
-	local targetFOV = DEFAULT_FOV * gunStats.ADSFOVMultiplier
-	TweenService:Create(camera, TweenInfo.new(gunStats.ADSTransitionTime), { FieldOfView = targetFOV }):Play()
-
-	-- Sniper-specific: show scope overlay and hide player/weapon
-	if state.currentGun == "Sniper" then
-		ShowSniperScopeUI()
-		SetCharacterTransparency(1)
-		SetWeaponTransparency(1)
-		CrosshairController.ShowSniperDot() -- Show red dot when scoped
-	end
-
-	SetGunActionState("ADS")
-	UpdateCrosshair()
-end
-
--- Exit ADS
-local function ExitADS()
-	if not state.isADS or not state.currentGun then
-		return
-	end
-
-	local gunStats = GunConfig.Guns[state.currentGun]
-	if not gunStats then
-		return
-	end
-
-	-- Check if we were using sniper before changing state
-	local wasSniper = state.currentGun == "Sniper"
-
-	state.isADS = false
-
-	-- Update shared ADS state for camera sensitivity
-	ADSState.SetADS(false, nil, 1.0)
-
-	TweenService:Create(camera, TweenInfo.new(gunStats.ADSTransitionTime), { FieldOfView = DEFAULT_FOV }):Play()
-
-	-- Sniper-specific: hide scope overlay and restore player/weapon visibility
-	if wasSniper then
-		HideSniperScopeUI()
-		SetCharacterTransparency(0)
-		SetWeaponTransparency(0)
-		CrosshairController.HideSniperDot() -- Restore original crosshair
-		CrosshairController.Show() -- Show crosshair again
-	end
-
-	SetGunActionState("HoldGun")
-	UpdateCrosshair()
-end
 
 MatchStateClient.OnCombatChanged(function(enabled)
 	if not enabled and state.equipped then
@@ -1246,11 +1059,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 	end
 
-	-- Right mouse button to ADS (allow even when camera is processing)
-	if input.UserInputType == Enum.UserInputType.MouseButton2 then
-		EnterADS()
-	end
-
 	-- R key to reload
 	if input.KeyCode == Enum.KeyCode.R and not gameProcessed then
 		if state.equipped then
@@ -1265,10 +1073,6 @@ UserInputService.InputEnded:Connect(function(input, _gameProcessed)
 		state.isFiring = false
 	end
 
-	-- Exit ADS
-	if input.UserInputType == Enum.UserInputType.MouseButton2 then
-		ExitADS()
-	end
 end)
 
 -- Track delta time for recoil decay
@@ -1647,13 +1451,8 @@ end)
 
 -- Scroll wheel weapon switching handled by Roblox's built-in tool system
 
--- Set up sprint blocking callback (cannot sprint while ADS or firing)
+-- Set up sprint blocking callback (cannot sprint while firing)
 SprintController.SetCanSprintCallback(function(): boolean
-	-- Cannot sprint while ADS
-	if state.isADS then
-		return false
-	end
-	-- Cannot sprint while actively firing
 	if state.isFiring then
 		return false
 	end
@@ -1678,20 +1477,6 @@ InputManager.BindAction("Fire", function(_actionName, inputState, _inputObject)
 		Shoot()
 	elseif inputState == Enum.UserInputState.End then
 		state.isFiring = false
-	end
-	return Enum.ContextActionResult.Sink
-end, false)
-
--- ADS (LT on gamepad)
-InputManager.BindAction("ADS", function(_actionName, inputState, _inputObject)
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-
-	if inputState == Enum.UserInputState.Begin then
-		EnterADS()
-	elseif inputState == Enum.UserInputState.End then
-		ExitADS()
 	end
 	return Enum.ContextActionResult.Sink
 end, false)
