@@ -4,3 +4,9 @@ node_modules/
 *.fbx
 *.glb
 *.obj
+*.wav
+*.ogg
+dist/
+coverage/
+.DS_Store
+Thumbs.db

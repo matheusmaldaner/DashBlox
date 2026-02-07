@@ -1,0 +1,33 @@
+{
+  "name": "robloxdashboard",
+  "version": "1.0.0",
+  "description": "AI-powered web dashboard for accelerating Roblox game development",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "test": "jest --verbose",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{js,json,css,html}\""
+  },
+  "keywords": [],
+  "author": "matheusmaldaner",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
+    "mongoose": "^9.1.6",
+    "multer": "^2.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "prettier": "^3.8.1",
+    "supertest": "^7.2.2"
+  }
+}
