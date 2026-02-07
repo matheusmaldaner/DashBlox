@@ -1,0 +1,319 @@
+/* voice generation section */
+
+.voice-section {
+  margin-top: 32px;
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+
+.voice-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voice-section h3 svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* voice controls */
+.voice-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.voice-top-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.voice-top-row .input-group {
+  flex: 1;
+}
+
+.voice-selectors {
+  display: flex;
+  gap: 12px;
+}
+
+.voice-selectors .input-group {
+  flex: 1;
+}
+
+.voice-sliders {
+  display: flex;
+  gap: 24px;
+}
+
+/* voice text area for batch dialogue */
+.voice-batch-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.voice-batch-area label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.voice-batch-area .batch-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* voice results list */
+.voice-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.voice-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.voice-result-item:hover {
+  border-color: var(--border-hover);
+}
+
+.voice-result-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.voice-result-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.voice-result-actions button {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.voice-result-actions button:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.voice-result-actions button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.voice-result-actions button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.voice-result-actions .play-btn.playing {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.voice-result-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.voice-result-badge.generating {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.voice-result-badge.ready {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+}
+
+.voice-result-badge.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+
+/* voice status */
+.voice-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voice-status .spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.voice-status.error {
+  color: var(--danger);
+}
+
+/* voice clone section */
+.voice-clone-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.voice-clone-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voice-clone-section h4 svg {
+  width: 16px;
+  height: 16px;
+}
+
+.clone-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.clone-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.clone-row .input-group {
+  flex: 1;
+}
+
+/* file upload area */
+.file-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.file-upload-area:hover {
+  border-color: var(--accent);
+  color: var(--text-secondary);
+  background: var(--accent-dim);
+}
+
+.file-upload-area svg {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 8px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.file-upload-area input[type="file"] {
+  display: none;
+}
+
+.file-upload-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.file-upload-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.file-upload-chip button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.file-upload-chip button:hover {
+  color: var(--danger);
+}
+
+/* responsive */
+@media (max-width: 700px) {
+  .voice-top-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .voice-selectors {
+    flex-direction: column;
+  }
+
+  .voice-sliders {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .clone-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
