@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="/css/audio.css">
   <link rel="stylesheet" href="/css/voice.css">
   <link rel="stylesheet" href="/css/models.css">
+  <link rel="stylesheet" href="/css/docs.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
 </head>
 <body>
   <!-- liquid glass background -->
@@ -497,15 +499,58 @@
 
     <!-- docs tab -->
     <div class="tab-content" id="tab-docs">
-      <div class="tab-placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-        </svg>
-        <h2>Project Docs</h2>
-        <p>View and edit CLAUDE.md, PLAN.md, and PROGRESS.md with structured markdown rendering, syntax highlighting, and section navigation.</p>
+      <!-- docs toolbar -->
+      <div class="docs-toolbar glass-panel">
+        <select class="select" id="docsProjectSelect">
+          <option value="">loading projects...</option>
+        </select>
+        <select class="select" id="docsFileSelect">
+          <option value="">select file</option>
+        </select>
+        <div class="docs-toolbar-spacer"></div>
+        <div class="docs-mode-toggle">
+          <button class="active" id="docsModeView">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            view
+          </button>
+          <button id="docsModeEdit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            edit
+          </button>
+          <button id="docsModeSplit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="12" y1="3" x2="12" y2="21"/>
+            </svg>
+            split
+          </button>
+        </div>
+        <button class="btn btn-primary docs-save-btn" id="docsSaveBtn">saved</button>
+      </div>
+
+      <!-- docs layout: toc sidebar + content -->
+      <div class="docs-layout">
+        <div class="docs-toc glass-panel">
+          <h4>table of contents</h4>
+          <ul class="docs-toc-list" id="docsTocList"></ul>
+        </div>
+        <div class="docs-content glass-panel" id="docsContentArea">
+          <div class="docs-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <p>select a project and file to get started</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -532,11 +577,16 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js" defer></script>
 
+  <!-- marked.js + highlight.js for docs tab -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" defer></script>
+
   <script src="/js/theme.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/audio.js"></script>
   <script src="/js/voice.js"></script>
   <script src="/js/models.js"></script>
+  <script src="/js/docs.js"></script>
 </body>
 </html>

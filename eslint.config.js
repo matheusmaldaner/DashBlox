@@ -31,8 +31,13 @@ module.exports = [
         FormData: 'readonly',
         URLSearchParams: 'readonly',
         api: 'readonly',
+        // cdn libraries
+        marked: 'readonly',
+        hljs: 'readonly',
+        Sortable: 'readonly',
         // jest
         describe: 'readonly',
+        it: 'readonly',
         test: 'readonly',
         expect: 'readonly',
         beforeAll: 'readonly',

@@ -124,6 +124,7 @@ a:hover {
   border-radius: var(--radius-xl);
   position: relative;
   overflow: hidden;
+  padding: 20px;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.35),
     0 2px 8px rgba(0, 0, 0, 0.2),
