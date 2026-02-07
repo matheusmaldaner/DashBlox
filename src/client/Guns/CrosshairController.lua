@@ -10,8 +10,72 @@ local MatchStateClient = require(ReplicatedStorage.Modules.MatchStateClient)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-local fightGui = playerGui:WaitForChild("FightGUI") :: ScreenGui
-local crosshairFrame = fightGui:WaitForChild("Crosshair")
+
+-- create FightGUI and crosshair frame if they don't exist
+local fightGui = playerGui:FindFirstChild("FightGUI") :: ScreenGui?
+if not fightGui then
+	fightGui = Instance.new("ScreenGui")
+	fightGui.Name = "FightGUI"
+	fightGui.ResetOnSpawn = false
+	fightGui.IgnoreGuiInset = true
+	fightGui.DisplayOrder = 10
+	fightGui.Parent = playerGui
+end
+
+local crosshairFrame = fightGui:FindFirstChild("Crosshair") :: Frame?
+if not crosshairFrame then
+	crosshairFrame = Instance.new("Frame")
+	crosshairFrame.Name = "Crosshair"
+	crosshairFrame.Size = UDim2.new(1, 0, 1, 0)
+	crosshairFrame.BackgroundTransparency = 1
+	crosshairFrame.Active = false
+	crosshairFrame.Parent = fightGui
+end
+
+-- create sniper scope overlay if it doesn't exist
+if not fightGui:FindFirstChild("SniperScope") then
+	local scope = Instance.new("Frame")
+	scope.Name = "SniperScope"
+	scope.Size = UDim2.new(1, 0, 1, 0)
+	scope.BackgroundColor3 = Color3.new(0, 0, 0)
+	scope.BackgroundTransparency = 0
+	scope.BorderSizePixel = 0
+	scope.Visible = false
+	scope.ZIndex = 50
+	scope.Parent = fightGui
+
+	-- scope crosshair lines
+	local lineH = Instance.new("Frame")
+	lineH.Size = UDim2.new(1, 0, 0, 1)
+	lineH.Position = UDim2.new(0, 0, 0.5, 0)
+	lineH.BackgroundColor3 = Color3.new(0, 0, 0)
+	lineH.BorderSizePixel = 0
+	lineH.ZIndex = 51
+	lineH.Parent = scope
+
+	local lineV = Instance.new("Frame")
+	lineV.Size = UDim2.new(0, 1, 1, 0)
+	lineV.Position = UDim2.new(0.5, 0, 0, 0)
+	lineV.BackgroundColor3 = Color3.new(0, 0, 0)
+	lineV.BorderSizePixel = 0
+	lineV.ZIndex = 51
+	lineV.Parent = scope
+
+	-- circular cutout effect (dark border with transparent center)
+	local circle = Instance.new("Frame")
+	circle.Name = "ScopeCircle"
+	circle.Size = UDim2.new(0, 400, 0, 400)
+	circle.Position = UDim2.new(0.5, -200, 0.5, -200)
+	circle.BackgroundColor3 = Color3.new(0, 0, 0)
+	circle.BackgroundTransparency = 1
+	circle.BorderSizePixel = 0
+	circle.ZIndex = 51
+	circle.Parent = scope
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = circle
+end
 
 -- crosshair configuration (defaults, will be updated from settings)
 local config = {
