@@ -52,4 +52,14 @@ const api = { // eslint-disable-line no-unused-vars
     }
     return res.json();
   },
+
+  // delete json
+  async deleteJSON(url) {
+    const res = await fetch(url, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || `request failed: ${res.status}`);
+    }
+    return res.json();
+  },
 };

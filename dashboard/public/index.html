@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/css/voice.css">
   <link rel="stylesheet" href="/css/models.css">
   <link rel="stylesheet" href="/css/docs.css">
+  <link rel="stylesheet" href="/css/board.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
 </head>
 <body>
@@ -556,15 +557,92 @@
 
     <!-- board tab -->
     <div class="tab-content" id="tab-board">
-      <div class="tab-placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7"/>
-          <rect x="14" y="3" width="7" height="7"/>
-          <rect x="14" y="14" width="7" height="7"/>
-          <rect x="3" y="14" width="7" height="7"/>
-        </svg>
-        <h2>Task Board</h2>
-        <p>Kanban-style task manager with drag-and-drop columns. Track your game development tasks, assign team members, and sync in real-time.</p>
+      <!-- board toolbar -->
+      <div class="board-toolbar glass-panel">
+        <input type="text" class="input board-search" id="boardSearch" placeholder="search cards...">
+        <div class="board-filters">
+          <select class="select" id="boardFilterPriority">
+            <option value="">all priorities</option>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+            <option value="critical">critical</option>
+          </select>
+          <select class="select" id="boardFilterLabel">
+            <option value="">all labels</option>
+            <option value="building">building</option>
+            <option value="audio">audio</option>
+            <option value="ui">ui</option>
+            <option value="bug">bug</option>
+            <option value="feature">feature</option>
+          </select>
+        </div>
+        <div class="board-toolbar-spacer"></div>
+        <button class="btn btn-primary" id="boardAddColumnBtn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          add column
+        </button>
+      </div>
+
+      <!-- board columns container -->
+      <div class="board-container" id="boardContainer">
+        <div class="board-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          <p>loading board...</p>
+        </div>
+      </div>
+
+      <!-- card detail/edit modal -->
+      <div class="card-modal modal-overlay" id="cardModal">
+        <div class="modal glass-panel">
+          <h3>edit card</h3>
+          <div class="modal-body">
+            <div class="input-group">
+              <label for="cardModalTitle">title</label>
+              <input type="text" class="input" id="cardModalTitle" placeholder="card title...">
+            </div>
+            <div class="input-group">
+              <label for="cardModalDesc">description</label>
+              <textarea class="textarea" id="cardModalDesc" rows="3" placeholder="add a description..."></textarea>
+            </div>
+            <div class="input-row">
+              <div class="input-group">
+                <label for="cardModalPriority">priority</label>
+                <select class="select" id="cardModalPriority">
+                  <option value="low">low</option>
+                  <option value="medium" selected>medium</option>
+                  <option value="high">high</option>
+                  <option value="critical">critical</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="cardModalAssignee">assignee</label>
+                <input type="text" class="input" id="cardModalAssignee" placeholder="team member...">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="cardModalDue">due date</label>
+              <input type="date" class="input" id="cardModalDue">
+            </div>
+            <div class="input-group">
+              <label>labels</label>
+              <div class="card-modal-labels" id="cardModalLabels"></div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-ghost" id="cardModalDelete" style="margin-right: auto; color: var(--danger);">delete</button>
+              <button class="btn btn-ghost" id="cardModalCancel">cancel</button>
+              <button class="btn btn-primary" id="cardModalSave">save</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -581,6 +659,9 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" defer></script>
 
+  <!-- sortablejs for board tab -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" defer></script>
+
   <script src="/js/theme.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
@@ -588,5 +669,6 @@
   <script src="/js/voice.js"></script>
   <script src="/js/models.js"></script>
   <script src="/js/docs.js"></script>
+  <script src="/js/board.js"></script>
 </body>
 </html>

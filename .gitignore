@@ -1,12 +1,23 @@
+# dashboard
 node_modules/
 .env
+dist/
+coverage/
+
+# rojo / roblox
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+
+# assets (large binary files)
 *.mp3
 *.fbx
 *.glb
 *.obj
 *.wav
 *.ogg
-dist/
-coverage/
+
+# os
 .DS_Store
 Thumbs.db
