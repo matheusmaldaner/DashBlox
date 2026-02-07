@@ -3,6 +3,7 @@ local CrosshairController = {}
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Settings = require(ReplicatedStorage.Modules.Settings)
@@ -98,7 +99,7 @@ local centerDot: Frame? = nil
 local currentSpread = 0
 local targetSpread = 0
 local isVisible = false
-local __isGunCrosshair = false -- true when gun is equipped
+local _isGunCrosshair = false -- true when gun is equipped
 
 -- Create a single crosshair bar
 local function createBar(name: string): Frame
@@ -264,44 +265,51 @@ function CrosshairController.SetSpread(spreadValue: number)
 	targetSpread = spreadValue
 end
 
--- Update bar positions (called every frame)
+-- Update bar positions (called every frame, follows mouse cursor)
 function CrosshairController.Update(deltaTime: number)
 	if not isVisible then
 		return
 	end
 
-	-- Smooth lerp towards target spread
+	-- smooth lerp towards target spread
 	currentSpread = currentSpread + (targetSpread - currentSpread) * math.min(deltaTime * 15, 1)
 
-	-- Check if spread is essentially zero (100% accuracy)
-	-- When accuracy is perfect, crosshair bars connect at center
+	-- check if spread is essentially zero (100% accuracy)
 	local isPerfectAccuracy = currentSpread < 0.001
 
 	local spreadPixels: number
 	local transparency: number
 
 	if isPerfectAccuracy then
-		-- Bars touch at center (no gap) and become slightly transparent
 		spreadPixels = 0
-		transparency = 0.5 -- 70% visible when fully accurate
+		transparency = 0.5
 	else
-		-- Convert spread to pixel offset (use configurable center gap)
 		spreadPixels = config.centerGap + (currentSpread * SPREAD_SCALE)
 		spreadPixels = math.min(spreadPixels, config.centerGap + MAX_SPREAD_PIXELS)
-		transparency = 0 -- fully visible when spread > 0
+		transparency = 0
 	end
 
-	-- Update bar transparency
+	-- get mouse position in screen pixels
+	local mousePos = UserInputService:GetMouseLocation()
+	local mx = mousePos.X
+	local my = mousePos.Y
+
+	-- update bar transparency
 	for _, bar in bars do
 		bar.BackgroundTransparency = transparency
 	end
 
-	-- Position bars from center (use configurable bar length)
+	-- position bars around mouse cursor using pixel offsets (no scale)
 	local halfBarLength = config.barLength / 2
-	bars.top.Position = UDim2.new(0.5, 0, 0.5, -spreadPixels - halfBarLength)
-	bars.bottom.Position = UDim2.new(0.5, 0, 0.5, spreadPixels + halfBarLength)
-	bars.left.Position = UDim2.new(0.5, -spreadPixels - halfBarLength, 0.5, 0)
-	bars.right.Position = UDim2.new(0.5, spreadPixels + halfBarLength, 0.5, 0)
+	bars.top.Position = UDim2.new(0, mx, 0, my - spreadPixels - halfBarLength)
+	bars.bottom.Position = UDim2.new(0, mx, 0, my + spreadPixels + halfBarLength)
+	bars.left.Position = UDim2.new(0, mx - spreadPixels - halfBarLength, 0, my)
+	bars.right.Position = UDim2.new(0, mx + spreadPixels + halfBarLength, 0, my)
+
+	-- update center dot position to follow mouse too
+	if centerDot and centerDot.Visible then
+		centerDot.Position = UDim2.new(0, mx - config.dotSize / 2, 0, my - config.dotSize / 2)
+	end
 end
 
 -- Show gun crosshair (spread bars, hide dot)
@@ -347,7 +355,7 @@ function CrosshairController.HideAll()
 	targetSpread = 0
 end
 
--- Show only the center dot
+-- show only the center dot (follows mouse)
 function CrosshairController.ShowDot()
 	isVisible = false
 	_isGunCrosshair = false
@@ -355,7 +363,6 @@ function CrosshairController.ShowDot()
 		bar.Visible = false
 	end
 	if centerDot then
-		-- respect showCrosshair setting
 		centerDot.Visible = config.dotEnabled and isCrosshairEnabled()
 	end
 end

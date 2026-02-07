@@ -26,44 +26,37 @@ local camera = workspace.CurrentCamera :: Camera
 local DEFAULT_FOV = 70
 local EQUIPPED_GUN_NAME = "EquippedGun"
 
--- AmmoUI/HotbarUI bridge (created by HotbarUI.client.lua)
+-- ammo ui bridge (created by HotbarUI if it exists)
 local ammoUIEvent: BindableEvent? = nil
+local ammoUISearched = false
 
 local function getAmmoUIEvent(): BindableEvent?
 	if ammoUIEvent then
 		return ammoUIEvent
 	end
+	if ammoUISearched then
+		return nil
+	end
+	ammoUISearched = true
 
-	local playerScripts = player:WaitForChild("PlayerScripts", 5)
+	local playerScripts = player:FindFirstChild("PlayerScripts")
 	if not playerScripts then
 		return nil
 	end
 
-	-- Wait for bridge to be created by HotbarUI
-	local bridge = playerScripts:WaitForChild("AmmoUIBridge", 5)
+	local bridge = playerScripts:FindFirstChild("AmmoUIBridge")
 	if not bridge then
-		warn("[GunController] AmmoUIBridge not found")
 		return nil
 	end
 
-	ammoUIEvent = bridge:WaitForChild("AmmoUIEvent", 5) :: BindableEvent?
-	if not ammoUIEvent then
-		warn("[GunController] AmmoUIEvent not found")
-	end
+	ammoUIEvent = bridge:FindFirstChild("AmmoUIEvent") :: BindableEvent?
 	return ammoUIEvent
 end
-
--- Initialize bridge early
-task.spawn(function()
-	getAmmoUIEvent()
-end)
 
 local function notifyAmmoUI(eventType: string, ...: any)
 	local event = getAmmoUIEvent()
 	if event then
 		event:Fire(eventType, ...)
-	else
-		warn("[GunController] Failed to notify AmmoUI:", eventType)
 	end
 end
 
@@ -71,54 +64,11 @@ local function canUseCombat(): boolean
 	return MatchStateClient.IsCombatEnabled()
 end
 
--- Camera offset (must match GunCameraController exactly)
-local CAMERA_OFFSET = Vector3.new(2.5, 1.5, 8) -- Right, Up, Back from character
-
--- Calculate the TRUE camera position and look direction
--- This replicates GunCameraController's calculation exactly to avoid timing issues
-local function getTrueCameraRay(): (Vector3, Vector3)
-	local character = player.Character
-	if not character then
-		return camera.CFrame.Position, camera.CFrame.LookVector
-	end
-
-	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not humanoidRootPart then
-		return camera.CFrame.Position, camera.CFrame.LookVector
-	end
-
-	-- Extract yaw and pitch from current camera look vector
-	local camLook = camera.CFrame.LookVector
-	local cameraYaw = math.atan2(-camLook.X, -camLook.Z)
-	local cameraPitch = math.asin(math.clamp(camLook.Y, -1, 1))
-
-	-- Character base position (at eye level approximately)
-	local characterPos = humanoidRootPart.Position + Vector3.new(0, 1.5, 0)
-
-	-- Calculate camera position with offset (same as GunCameraController)
-	local offsetCFrame = CFrame.new(characterPos) * CFrame.Angles(0, cameraYaw, 0)
-	local rightOffset = offsetCFrame.RightVector * CAMERA_OFFSET.X
-	local upOffset = Vector3.new(0, CAMERA_OFFSET.Y, 0)
-	local backOffset = (CFrame.Angles(0, cameraYaw, 0) * CFrame.Angles(cameraPitch, 0, 0)).LookVector * -CAMERA_OFFSET.Z
-
-	local cameraPos = characterPos + rightOffset + upOffset + backOffset
-
-	-- Raycast to prevent camera clipping through walls (same as GunCameraController)
-	local rayParams = RaycastParams.new()
-	rayParams.FilterDescendantsInstances = { character }
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-
-	local rayDirection = cameraPos - characterPos
-	local rayResult = workspace:Raycast(characterPos, rayDirection, rayParams)
-
-	if rayResult then
-		cameraPos = rayResult.Position + rayResult.Normal * 0.5
-	end
-
-	-- Look direction (same as GunCameraController)
-	local lookDirection = (CFrame.Angles(0, cameraYaw, 0) * CFrame.Angles(cameraPitch, 0, 0)).LookVector
-
-	return cameraPos, lookDirection
+-- get world point under mouse cursor by raycasting from camera through screen position
+local function getMouseWorldRay(): (Vector3, Vector3)
+	local mousePos = UserInputService:GetMouseLocation()
+	local viewportRay = camera:ViewportPointToRay(mousePos.X, mousePos.Y)
+	return viewportRay.Origin, viewportRay.Direction.Unit
 end
 
 -- DEBUG: Set to true to visualize raycast origin, direction, and hit point
@@ -1105,10 +1055,8 @@ local function Shoot()
 	}
 	local spread = GunUtility.CalculateSpread(gunStats, playerState) + state.currentRecoil
 
-	-- STEP 1: Find the aim point (where crosshair points in 3D world)
-	-- Use getTrueCameraRay() to calculate camera position exactly like GunCameraController
-	-- This avoids timing issues where camera.CFrame might be stale
-	local cameraPos, cameraLookDir = getTrueCameraRay()
+	-- step 1: raycast from camera through mouse cursor to find world target
+	local rayOrigin, rayDir = getMouseWorldRay()
 
 	local aimRaycastParams = RaycastParams.new()
 	if player.Character then
@@ -1116,14 +1064,12 @@ local function Shoot()
 	end
 	aimRaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
-	local aimResult = workspace:Raycast(cameraPos, cameraLookDir * gunStats.MaxRange, aimRaycastParams)
-	local aimPoint = aimResult and aimResult.Position or (cameraPos + cameraLookDir * gunStats.MaxRange)
+	local aimResult = workspace:Raycast(rayOrigin, rayDir * gunStats.MaxRange, aimRaycastParams)
+	local aimPoint = aimResult and aimResult.Position or (rayOrigin + rayDir * gunStats.MaxRange)
 
-	-- STEP 2: Get muzzle and back attachment positions from weapon model
-	local muzzlePos = cameraPos -- fallback to camera if no muzzle
-	local backPos = cameraPos -- fallback to camera if no back attachment
+	-- step 2: get muzzle position from weapon model
+	local muzzlePos = rayOrigin -- fallback to camera if no muzzle
 	local muzzleAttachment: Attachment? = nil
-	local backAttachment: Attachment? = nil
 
 	if not state.weaponModel or not state.weaponModel.Parent then
 		state.weaponModel = GetEquippedGunModel()
@@ -1134,120 +1080,30 @@ local function Shoot()
 			muzzleAttachment = muzzle
 			muzzlePos = muzzle.WorldPosition
 		end
-
-		local back = state.weaponModel:FindFirstChild("Back", true)
-		if back and back:IsA("Attachment") then
-			backAttachment = back
-			backPos = back.WorldPosition
-		end
 	end
 
-	-- STEP 3: Check if anything is between Back and Muzzle (weapon clipping through wall)
-	-- If so, use Back attachment as the shot origin instead of Muzzle
-	local useBackAttachment = false
+	-- step 3: raycast from muzzle toward the aim point
+	-- if a wall is between muzzle and target, bullet hits the wall
+	local muzzleToAim = aimPoint - muzzlePos
+	local muzzleDist = muzzleToAim.Magnitude
+	local baseDirection = muzzleDist > 0.01 and muzzleToAim.Unit or rayDir
 
-	if backAttachment and muzzleAttachment then
-		local backToMuzzle = muzzlePos - backPos
-		local backToMuzzleDist = backToMuzzle.Magnitude
+	-- apply spread
+	local direction = if spread < 0.001
+		then baseDirection
+		else GunUtility.ApplySpreadToDirection(baseDirection, spread)
 
-		if backToMuzzleDist > 0.1 then
-			local backToMuzzleCheck = workspace:Raycast(backPos, backToMuzzle.Unit * backToMuzzleDist, aimRaycastParams)
-			if backToMuzzleCheck then
-				-- Something is between Back and Muzzle = weapon clipping through geometry
-				useBackAttachment = true
-			end
-		end
-	end
+	local origin = muzzlePos
+	local result = workspace:Raycast(origin, direction * gunStats.MaxRange, aimRaycastParams)
 
-	-- Choose shot origin based on clipping check
-	local shotOrigin = useBackAttachment and backPos or muzzlePos
-
-	-- Check if this is a perfect accuracy shot (spread essentially zero)
-	local isPerfectAccuracy = spread < 0.001
-
-	local origin: Vector3
-	local direction: Vector3
-	local result: RaycastResult?
-
-	if isPerfectAccuracy then
-		-- PERFECT ACCURACY: Shot hits exactly where crosshair points
-		-- Use camera ray directly - bullet goes precisely to aim point
-		origin = shotOrigin
-		direction = (aimPoint - shotOrigin).Unit
-
-		-- The hit is whatever the camera was aiming at (aimResult from earlier)
-		result = aimResult
-
-		print("[GunController] PERFECT ACCURACY - using aimResult directly")
-	else
-		-- SPREAD ACTIVE: Calculate from muzzle with spread applied
-
-		-- Calculate direction from shot origin to aim point
-		local originToAim = aimPoint - shotOrigin
-		local distanceToAim = originToAim.Magnitude
-		local originToAimDir = distanceToAim > 0.01 and originToAim.Unit or cameraLookDir
-
-		-- Check if aim point is behind the shot origin (dot product with camera look < 0)
-		-- or if it's extremely close (< 1 stud)
-		local isBehindOrigin = originToAimDir:Dot(cameraLookDir) < 0.1
-		local isTooClose = distanceToAim < 1
-
-		local baseDirection: Vector3
-
-		if isBehindOrigin or isTooClose then
-			-- Fallback: shoot from camera position in camera direction
-			-- This prevents shooting yourself when gun is against a wall
-			origin = cameraPos
-			baseDirection = cameraLookDir
-		else
-			-- Check if there's geometry between shot origin and aim point
-			local originToAimCheck = workspace:Raycast(shotOrigin, originToAimDir * distanceToAim, aimRaycastParams)
-
-			if originToAimCheck then
-				-- There's something between origin and aim point
-				-- Shoot toward the obstruction (hit the wall)
-				baseDirection = (originToAimCheck.Position - shotOrigin).Unit
-			else
-				-- Clear line of sight from origin to aim point
-				baseDirection = originToAimDir
-			end
-
-			origin = shotOrigin
-		end
-
-		-- Apply spread to direction
-		direction = GunUtility.ApplySpreadToDirection(baseDirection, spread)
-
-		-- Raycast with spread-adjusted direction
-		local raycastParams = RaycastParams.new()
-		if player.Character then
-			raycastParams.FilterDescendantsInstances = { player.Character }
-		end
-		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-
-		result = workspace:Raycast(origin, direction * gunStats.MaxRange, raycastParams)
-	end
-
-	-- DEBUG: Visualize the raycast
+	-- debug visualization
 	if DEBUG_RAYCAST then
 		local endPos = result and result.Position or (origin + direction * gunStats.MaxRange)
-
-		-- Cyan dot at aim point (where crosshair points in 3D)
 		createDebugDot(aimPoint, Color3.fromRGB(0, 255, 255), 0.4)
-
-		-- Green dot at muzzle (shot origin)
 		createDebugDot(origin, Color3.fromRGB(0, 255, 0), 0.3)
-
-		-- Blue line from muzzle to aim point (base direction, no spread)
 		createDebugLine(origin, aimPoint, Color3.fromRGB(0, 150, 255))
-
-		-- Yellow line for actual shot direction (with spread applied)
 		createDebugLine(origin, endPos, Color3.fromRGB(255, 255, 0))
-
-		-- Red dot at final hit point
 		createDebugDot(endPos, Color3.fromRGB(255, 0, 0), 0.4)
-
-		-- White dot at exact hit if we hit something
 		if result then
 			createDebugDot(result.Position, Color3.fromRGB(255, 255, 255), 0.25)
 		end
@@ -1471,8 +1327,8 @@ local function updateDebugAimBeam()
 		return
 	end
 
-	-- STEP 1: Find the aim point using TRUE camera position (matches GunCameraController)
-	local cameraPos, cameraLookDir = getTrueCameraRay()
+	-- raycast from camera through mouse to get aim point
+	local rayOrigin, rayDir = getMouseWorldRay()
 
 	local raycastParams = RaycastParams.new()
 	if player.Character then
@@ -1481,11 +1337,11 @@ local function updateDebugAimBeam()
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	local maxRange = 500
-	local aimResult = workspace:Raycast(cameraPos, cameraLookDir * maxRange, raycastParams)
-	local aimPoint = aimResult and aimResult.Position or (cameraPos + cameraLookDir * maxRange)
+	local aimResult = workspace:Raycast(rayOrigin, rayDir * maxRange, raycastParams)
+	local aimPoint = aimResult and aimResult.Position or (rayOrigin + rayDir * maxRange)
 
-	-- STEP 2: Get muzzle position
-	local muzzlePos = cameraPos -- fallback
+	-- get muzzle position
+	local muzzlePos = rayOrigin
 	if state.weaponModel then
 		local muzzle = state.weaponModel:FindFirstChild("Muzzle", true)
 		if muzzle and muzzle:IsA("Attachment") then
@@ -1493,7 +1349,6 @@ local function updateDebugAimBeam()
 		end
 	end
 
-	-- Offset beam slightly to the right so it's visible (0.05 studs)
 	local rightOffset = camera.CFrame.RightVector * 0.05
 	local beamStart = muzzlePos + rightOffset
 	local beamEnd = aimPoint + rightOffset
@@ -1751,12 +1606,26 @@ function SwitchToSlot(slotIndex: number)
 	-- equip weapon from slot
 	currentSlot = slotIndex
 	if GunConfig.Guns[gunName] then
-		-- Play weapon switch sound
 		AudioService.PlayWeaponSwitch(gunName)
 		EquipGun(gunName)
+
+		-- sync roblox hotbar by equipping the matching tool
+		local character = player.Character
+		local backpack = player:FindFirstChild("Backpack")
+		if character and backpack then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				-- find the tool in backpack or character
+				for _, child in backpack:GetChildren() do
+					if child:IsA("Tool") and child:GetAttribute("GunName") == gunName then
+						humanoid:EquipTool(child)
+						break
+					end
+				end
+			end
+		end
 	end
 
-	-- notify hotbar of slot change
 	notifyAmmoUI("SlotChanged", slotIndex + 1, loadout)
 end
 
@@ -2098,6 +1967,10 @@ local function bindToolEvents(tool: Tool)
 	end
 
 	tool.Equipped:Connect(function()
+		-- skip if keyboard handler already equipped this gun
+		if state.equipped and state.currentGun == gunName then
+			return
+		end
 		if state.equipped then
 			UnequipGun()
 		end
@@ -2105,6 +1978,8 @@ local function bindToolEvents(tool: Tool)
 	end)
 
 	tool.Unequipped:Connect(function()
+		-- only unequip if we're still holding this specific gun
+		-- prevents race condition where keyboard handler already switched weapons
 		if state.equipped and state.currentGun == gunName then
 			UnequipGun()
 		end
