@@ -16,7 +16,7 @@ function getHeaders() {
 }
 
 // create a text-to-3d preview task
-async function createTask({ prompt, topology, targetPolycount }) {
+async function createTask({ prompt, negativePrompt, topology, targetPolycount }) {
   if (!prompt || prompt.trim().length === 0) {
     throw Object.assign(new Error('prompt is required'), { status: 400 });
   }
@@ -28,6 +28,10 @@ async function createTask({ prompt, topology, targetPolycount }) {
     topology: topology || 'triangle',
     target_polycount: targetPolycount || 30000,
   };
+
+  if (negativePrompt) {
+    body.negative_prompt = negativePrompt.trim();
+  }
 
   const response = await fetch(`${BASE_URL}/text-to-3d`, {
     method: 'POST',
@@ -81,4 +85,35 @@ async function getStatus(taskId) {
   };
 }
 
-module.exports = { createTask, getStatus };
+// create an image-to-3d task
+async function createImageTask({ imageUrl, topology, targetPolycount }) {
+  if (!imageUrl) {
+    throw Object.assign(new Error('image url is required'), { status: 400 });
+  }
+
+  const body = {
+    image_url: imageUrl,
+    ai_model: 'meshy-6',
+    topology: topology || 'triangle',
+    target_polycount: targetPolycount || 30000,
+  };
+
+  const response = await fetch('https://api.meshy.ai/openapi/v1/image-to-3d', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw Object.assign(
+      new Error(`meshy image-to-3d error: ${response.status}`),
+      { status: response.status, details: errorText }
+    );
+  }
+
+  const data = await response.json();
+  return { taskId: data.result, provider: 'meshy' };
+}
+
+module.exports = { createTask, createImageTask, getStatus };

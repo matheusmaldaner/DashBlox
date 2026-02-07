@@ -1,12 +1,13 @@
-// models tab - 3d generation with provider toggle and three.js viewer
+// models tab - 3d generation with provider toggle, image upload, roblox upload
 
 (function () {
   // state
   let selectedProvider = 'meshy';
+  let currentMode = 'text'; // 'text' or 'image'
   let currentTask = null; // { taskId, provider, assetId, subscriptionKey }
   let pollInterval = null;
-  let scene, camera, renderer, controls;
-  let viewerInitialized = false;
+  let selectedImageFile = null;
+  let lastModelUrl = null;
 
   document.addEventListener('DOMContentLoaded', () => {
     initModelsTab();
@@ -14,6 +15,17 @@
   });
 
   function initModelsTab() {
+    // mode toggle (text/image)
+    const modeBtns = document.querySelectorAll('.model-mode-toggle button');
+    modeBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        modeBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        toggleMode(currentMode);
+      });
+    });
+
     // provider toggle
     const providerBtns = document.querySelectorAll('.provider-toggle button');
     providerBtns.forEach((btn) => {
@@ -21,34 +33,115 @@
         providerBtns.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         selectedProvider = btn.dataset.provider;
+        updateQualityVisibility();
       });
     });
 
     // enhance button
     const enhanceBtn = document.getElementById('modelEnhanceBtn');
-    if (enhanceBtn) {
-      enhanceBtn.addEventListener('click', handleEnhance);
-    }
+    if (enhanceBtn) enhanceBtn.addEventListener('click', handleEnhance);
 
     // generate button
     const generateBtn = document.getElementById('modelGenerateBtn');
-    if (generateBtn) {
-      generateBtn.addEventListener('click', handleGenerate);
-    }
+    if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
 
     // download buttons
-    document.querySelectorAll('.model-download-row button').forEach((btn) => {
+    document.querySelectorAll('.model-download-row button[data-format]').forEach((btn) => {
       btn.addEventListener('click', () => handleDownload(btn.dataset.format));
     });
+
+    // upload to roblox button
+    const robloxBtn = document.getElementById('modelUploadRoblox');
+    if (robloxBtn) robloxBtn.addEventListener('click', handleUploadRoblox);
+
+    // image upload
+    initImageUpload();
+
+    // clear image
+    const clearBtn = document.getElementById('modelClearImage');
+    if (clearBtn) clearBtn.addEventListener('click', clearImageUpload);
+  }
+
+  function toggleMode(mode) {
+    const textInput = document.getElementById('modelTextInput');
+    const imageInput = document.getElementById('modelImageInput');
+    if (mode === 'text') {
+      textInput.style.display = '';
+      imageInput.style.display = 'none';
+    } else {
+      textInput.style.display = 'none';
+      imageInput.style.display = '';
+    }
+  }
+
+  function updateQualityVisibility() {
+    const qualityGroup = document.getElementById('modelQualityGroup');
+    if (qualityGroup) {
+      qualityGroup.style.display = selectedProvider === 'rodin' ? '' : 'none';
+    }
+  }
+
+  // image upload handlers
+  function initImageUpload() {
+    const uploadArea = document.getElementById('modelUploadArea');
+    const fileInput = document.getElementById('modelImageFile');
+    if (!uploadArea || !fileInput) return;
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) handleImageSelect(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) handleImageSelect(fileInput.files[0]);
+    });
+  }
+
+  function handleImageSelect(file) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      const statusEl = document.getElementById('modelStatus');
+      statusEl.innerHTML = 'unsupported image type. use jpg, png, or webp';
+      statusEl.className = 'model-status error';
+      return;
+    }
+
+    selectedImageFile = file;
+    const uploadArea = document.getElementById('modelUploadArea');
+    const preview = document.getElementById('modelUploadPreview');
+    const previewImg = document.getElementById('modelPreviewImg');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      uploadArea.style.display = 'none';
+      preview.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearImageUpload() {
+    selectedImageFile = null;
+    const uploadArea = document.getElementById('modelUploadArea');
+    const preview = document.getElementById('modelUploadPreview');
+    const fileInput = document.getElementById('modelImageFile');
+    uploadArea.style.display = '';
+    preview.style.display = 'none';
+    if (fileInput) fileInput.value = '';
   }
 
   async function handleEnhance() {
     const promptInput = document.getElementById('modelPrompt');
     const prompt = promptInput.value.trim();
-    if (!prompt) {
-      promptInput.focus();
-      return;
-    }
+    if (!prompt) { promptInput.focus(); return; }
 
     const enhanceBtn = document.getElementById('modelEnhanceBtn');
     const statusEl = document.getElementById('modelStatus');
@@ -64,7 +157,6 @@
         prompt,
         provider: selectedProvider,
       });
-
       enhancedText.textContent = res.data.enhanced;
       enhancedEl.classList.add('visible');
       statusEl.innerHTML = 'prompt enhanced';
@@ -72,20 +164,71 @@
       statusEl.innerHTML = `enhance failed: ${err.message}`;
       statusEl.className = 'model-status error';
     }
-
     enhanceBtn.disabled = false;
   }
 
   async function handleGenerate() {
+    if (currentMode === 'image') return handleGenerateImage();
+
     const promptInput = document.getElementById('modelPrompt');
     const prompt = promptInput.value.trim();
-    if (!prompt) {
-      promptInput.focus();
-      return;
-    }
+    if (!prompt) { promptInput.focus(); return; }
 
     const enhancedText = document.getElementById('enhancedPromptText');
     const enhancedPrompt = enhancedText.textContent.trim() || null;
+    const negativePrompt = document.getElementById('modelNegativePrompt')?.value.trim() || null;
+
+    prepareGenerationUI();
+
+    const body = {
+      prompt,
+      provider: selectedProvider,
+      enhanced_prompt: enhancedPrompt,
+      negative_prompt: negativePrompt,
+    };
+    if (selectedProvider === 'rodin') {
+      body.tier = document.getElementById('modelQuality')?.value || 'Regular';
+    }
+
+    try {
+      const res = await api.postJSON('/api/models/generate', body);
+      setCurrentTask(res.data);
+      startPolling();
+    } catch (err) {
+      showGenerationError(err.message);
+    }
+  }
+
+  async function handleGenerateImage() {
+    if (!selectedImageFile) {
+      const statusEl = document.getElementById('modelStatus');
+      statusEl.innerHTML = 'please upload a reference image first';
+      statusEl.className = 'model-status error';
+      return;
+    }
+
+    prepareGenerationUI();
+
+    const statusEl = document.getElementById('modelStatus');
+    statusEl.innerHTML = `<div class="spinner"></div> uploading image to ${selectedProvider}...`;
+
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedImageFile);
+      formData.append('provider', selectedProvider);
+      if (selectedProvider === 'rodin') {
+        formData.append('tier', document.getElementById('modelQuality')?.value || 'Regular');
+      }
+
+      const res = await api.postFormData('/api/models/generate-image', formData);
+      setCurrentTask(res.data);
+      startPolling();
+    } catch (err) {
+      showGenerationError(err.message);
+    }
+  }
+
+  function prepareGenerationUI() {
     const generateBtn = document.getElementById('modelGenerateBtn');
     const statusEl = document.getElementById('modelStatus');
     const progressEl = document.getElementById('modelProgress');
@@ -96,7 +239,6 @@
     generateBtn.disabled = true;
     stopPolling();
 
-    // reset ui
     progressEl.classList.add('visible');
     progressBar.style.width = '0%';
     downloadRow.classList.remove('visible');
@@ -104,31 +246,25 @@
 
     statusEl.innerHTML = `<div class="spinner"></div> submitting to ${selectedProvider}...`;
     statusEl.className = 'model-status';
+  }
 
-    try {
-      const res = await api.postJSON('/api/models/generate', {
-        prompt,
-        provider: selectedProvider,
-        enhanced_prompt: enhancedPrompt,
-      });
+  function setCurrentTask(data) {
+    currentTask = {
+      taskId: data.taskId,
+      provider: selectedProvider,
+      assetId: data.assetId,
+      subscriptionKey: data.subscriptionKey,
+    };
+    const statusEl = document.getElementById('modelStatus');
+    statusEl.innerHTML = `<div class="spinner"></div> generating... (task: ${currentTask.taskId.slice(0, 8)}...)`;
+  }
 
-      currentTask = {
-        taskId: res.data.taskId,
-        provider: selectedProvider,
-        assetId: res.data.assetId,
-        subscriptionKey: res.data.subscriptionKey,
-      };
-
-      statusEl.innerHTML = `<div class="spinner"></div> generating... (task: ${currentTask.taskId.slice(0, 8)}...)`;
-
-      // start polling
-      startPolling();
-    } catch (err) {
-      statusEl.innerHTML = `generation failed: ${err.message}`;
-      statusEl.className = 'model-status error';
-      progressEl.classList.remove('visible');
-      generateBtn.disabled = false;
-    }
+  function showGenerationError(message) {
+    const statusEl = document.getElementById('modelStatus');
+    statusEl.innerHTML = `generation failed: ${message}`;
+    statusEl.className = 'model-status error';
+    document.getElementById('modelProgress').classList.remove('visible');
+    document.getElementById('modelGenerateBtn').disabled = false;
   }
 
   function startPolling() {
@@ -136,198 +272,92 @@
 
     pollInterval = setInterval(async () => {
       if (!currentTask) return;
-
       try {
-        const params = new URLSearchParams({
-          provider: currentTask.provider,
-        });
-        if (currentTask.subscriptionKey) {
-          params.set('subscription_key', currentTask.subscriptionKey);
-        }
+        const params = new URLSearchParams({ provider: currentTask.provider });
+        if (currentTask.subscriptionKey) params.set('subscription_key', currentTask.subscriptionKey);
 
         const res = await api.getJSON(`/api/models/status/${currentTask.taskId}?${params}`);
-        const data = res.data;
-        const statusEl = document.getElementById('modelStatus');
-        const progressBar = document.getElementById('modelProgressBar');
-
-        progressBar.style.width = `${data.progress}%`;
-
-        if (data.status === 'generating') {
-          statusEl.innerHTML = `<div class="spinner"></div> generating... ${data.progress}%`;
-        } else if (data.status === 'ready') {
-          stopPolling();
-          statusEl.innerHTML = 'generation complete';
-          statusEl.className = 'model-status';
-          progressBar.style.width = '100%';
-
-          document.getElementById('modelGenerateBtn').disabled = false;
-          document.getElementById('modelDownloadRow').classList.add('visible');
-
-          // load model into three.js viewer
-          if (data.modelUrls?.glb) {
-            loadModelPreview(data.modelUrls.glb);
-          }
-
-          loadModelHistory();
-        } else if (data.status === 'error') {
-          stopPolling();
-          statusEl.innerHTML = 'generation failed';
-          statusEl.className = 'model-status error';
-          document.getElementById('modelGenerateBtn').disabled = false;
-          document.getElementById('modelProgress').classList.remove('visible');
-        }
+        handlePollResult(res.data);
       } catch (err) {
         console.error('poll error:', err.message);
       }
-    }, 5000); // poll every 5 seconds
+    }, 5000);
+  }
+
+  function handlePollResult(data) {
+    const statusEl = document.getElementById('modelStatus');
+    const progressBar = document.getElementById('modelProgressBar');
+    progressBar.style.width = `${data.progress}%`;
+
+    if (data.status === 'generating') {
+      statusEl.innerHTML = `<div class="spinner"></div> generating... ${data.progress}%`;
+    } else if (data.status === 'ready') {
+      stopPolling();
+      statusEl.innerHTML = 'generation complete';
+      statusEl.className = 'model-status';
+      progressBar.style.width = '100%';
+      document.getElementById('modelGenerateBtn').disabled = false;
+      document.getElementById('modelDownloadRow').classList.add('visible');
+
+      if (data.modelUrls?.glb) {
+        lastModelUrl = data.modelUrls.glb;
+        modelsViewer.loadModelPreview(data.modelUrls.glb);
+      }
+      loadModelHistory();
+    } else if (data.status === 'error') {
+      stopPolling();
+      statusEl.innerHTML = 'generation failed';
+      statusEl.className = 'model-status error';
+      document.getElementById('modelGenerateBtn').disabled = false;
+      document.getElementById('modelProgress').classList.remove('visible');
+    }
   }
 
   function stopPolling() {
-    if (pollInterval) {
-      clearInterval(pollInterval);
-      pollInterval = null;
-    }
-  }
-
-  // three.js viewer
-  function initViewer() {
-    if (viewerInitialized) return;
-
-    const container = document.getElementById('modelViewerCanvas');
-    if (!container || typeof window.THREE === 'undefined') return;
-
-    const THREE = window.THREE;
-
-    // scene
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a2e);
-
-    // camera
-    camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(3, 2, 3);
-
-    // renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    container.appendChild(renderer.domElement);
-
-    // orbit controls
-    if (window.THREE.OrbitControls) {
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-    }
-
-    // lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 10, 7);
-    directionalLight.castShadow = true;
-    scene.add(directionalLight);
-
-    const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
-    fillLight.position.set(-5, 3, -5);
-    scene.add(fillLight);
-
-    // grid floor
-    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
-    scene.add(gridHelper);
-
-    // resize handler
-    const resizeObserver = new ResizeObserver(() => {
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
-    });
-    resizeObserver.observe(container);
-
-    // animation loop
-    function animate() {
-      requestAnimationFrame(animate);
-      if (controls) controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    viewerInitialized = true;
-  }
-
-  function loadModelPreview(url) {
-    if (typeof window.THREE === 'undefined') {
-      console.warn('three.js not loaded, skipping preview');
-      return;
-    }
-
-    initViewer();
-
-    const THREE = window.THREE;
-
-    // remove old model
-    const oldModel = scene.getObjectByName('loadedModel');
-    if (oldModel) scene.remove(oldModel);
-
-    // hide empty state
-    const emptyState = document.getElementById('modelViewerEmpty');
-    if (emptyState) emptyState.style.display = 'none';
-
-    // load glb
-    if (window.THREE.GLTFLoader) {
-      const loader = new THREE.GLTFLoader();
-      loader.load(
-        url,
-        (gltf) => {
-          const model = gltf.scene;
-          model.name = 'loadedModel';
-
-          // center and scale model
-          const box = new THREE.Box3().setFromObject(model);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const scale = 2 / maxDim;
-
-          model.position.sub(center);
-          model.scale.setScalar(scale);
-
-          scene.add(model);
-
-          // reset camera
-          camera.position.set(3, 2, 3);
-          camera.lookAt(0, 0, 0);
-          if (controls) controls.target.set(0, 0, 0);
-        },
-        undefined,
-        (err) => {
-          console.error('failed to load model:', err);
-        }
-      );
-    }
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
   }
 
   async function handleDownload(format) {
     if (!currentTask) return;
-
-    const params = new URLSearchParams({
-      provider: currentTask.provider,
-      format: format || 'glb',
-    });
-    if (currentTask.subscriptionKey) {
-      params.set('subscription_key', currentTask.subscriptionKey);
-    }
+    const params = new URLSearchParams({ provider: currentTask.provider, format: format || 'glb' });
+    if (currentTask.subscriptionKey) params.set('subscription_key', currentTask.subscriptionKey);
 
     const url = `/api/models/download/${currentTask.taskId}?${params}`;
-
-    // open download in new tab
     const a = document.createElement('a');
     a.href = url;
     a.download = `model.${format || 'glb'}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  async function handleUploadRoblox() {
+    if (!lastModelUrl) {
+      const statusEl = document.getElementById('modelStatus');
+      statusEl.innerHTML = 'no model to upload - generate one first';
+      statusEl.className = 'model-status error';
+      return;
+    }
+
+    const statusEl = document.getElementById('modelStatus');
+    const robloxBtn = document.getElementById('modelUploadRoblox');
+    robloxBtn.disabled = true;
+    statusEl.innerHTML = '<div class="spinner"></div> uploading to roblox...';
+    statusEl.className = 'model-status';
+
+    try {
+      const promptInput = document.getElementById('modelPrompt');
+      const res = await api.postJSON('/api/models/upload-roblox', {
+        model_url: lastModelUrl,
+        name: promptInput?.value?.trim()?.slice(0, 50) || 'AI Generated Model',
+      });
+      statusEl.innerHTML = `uploaded to roblox (operation: ${res.data.path || 'pending'})`;
+      statusEl.className = 'model-status';
+    } catch (err) {
+      statusEl.innerHTML = `roblox upload failed: ${err.message}`;
+      statusEl.className = 'model-status error';
+    }
+    robloxBtn.disabled = false;
   }
 
   async function loadModelHistory() {
@@ -340,24 +370,45 @@
         grid.innerHTML = '<div class="model-history-empty">no previous generations</div>';
         return;
       }
-
-      grid.innerHTML = res.data
-        .map(
-          (item) => `
-        <div class="model-history-item">
-          <div class="model-history-item-name">${escapeHtml(item.name || item.prompt)}</div>
-          <div class="model-history-item-meta">
-            <span>${item.provider || 'unknown'}</span>
-            <span>${item.status || ''}</span>
-            <span>${formatDate(item.created_at)}</span>
-          </div>
-        </div>
-      `
-        )
-        .join('');
+      renderHistoryGrid(grid, res.data);
     } catch {
       grid.innerHTML = '<div class="model-history-empty">history unavailable</div>';
     }
+  }
+
+  function renderHistoryGrid(grid, items) {
+    grid.innerHTML = items
+      .map((item) => {
+        const statusClass = item.status === 'completed' ? 'completed' : item.status === 'failed' ? 'failed' : 'processing';
+        const thumbHtml = item.thumbnail_path
+          ? `<img src="${escapeHtml(item.thumbnail_path)}" alt="thumbnail">`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+
+        return `
+        <div class="model-history-item clickable" data-file-path="${escapeHtml(item.file_path || '')}">
+          <div class="model-history-item-thumb">${thumbHtml}</div>
+          <div class="model-history-item-name">${escapeHtml(item.name || item.prompt)}</div>
+          <div class="model-history-item-meta">
+            <span>${item.provider || 'unknown'}</span>
+            <span class="model-history-item-status ${statusClass}">${item.status || ''}</span>
+            <span>${formatDate(item.created_at)}</span>
+          </div>
+        </div>`;
+      })
+      .join('');
+
+    // click to load into viewer
+    grid.querySelectorAll('.model-history-item.clickable').forEach((item) => {
+      item.addEventListener('click', () => {
+        const filePath = item.dataset.filePath;
+        if (filePath) {
+          document.getElementById('modelViewer').classList.add('visible');
+          document.getElementById('modelDownloadRow').classList.add('visible');
+          lastModelUrl = filePath;
+          modelsViewer.loadModelPreview(filePath);
+        }
+      });
+    });
   }
 
   function escapeHtml(str) {

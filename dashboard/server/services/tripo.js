@@ -88,4 +88,80 @@ async function getStatus(taskId) {
   };
 }
 
-module.exports = { createTask, getStatus };
+// upload image and get a token for image-to-3d
+async function uploadImage(imageBuffer, filename) {
+  const boundary = `----TripoBoundary${Date.now()}`;
+  const crlf = '\r\n';
+  const contentType = filename.endsWith('.png') ? 'image/png' : 'image/jpeg';
+
+  const header = `--${boundary}${crlf}Content-Disposition: form-data; name="file"; filename="${filename}"${crlf}Content-Type: ${contentType}${crlf}${crlf}`;
+  const footer = `${crlf}--${boundary}--${crlf}`;
+
+  const headerBuf = Buffer.from(header);
+  const footerBuf = Buffer.from(footer);
+  const body = Buffer.concat([headerBuf, imageBuffer, footerBuf]);
+
+  const apiKey = config.tripoApiKey;
+  if (!apiKey) {
+    throw Object.assign(new Error('TRIPO_API_KEY not configured'), { status: 503 });
+  }
+
+  const response = await fetch(`${BASE_URL}/upload`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw Object.assign(
+      new Error(`tripo upload error: ${response.status}`),
+      { status: response.status, details: errorText }
+    );
+  }
+
+  const data = await response.json();
+  return data.data?.image_token;
+}
+
+// create an image-to-3d task
+async function createImageTask({ imageToken }) {
+  if (!imageToken) {
+    throw Object.assign(new Error('image token is required'), { status: 400 });
+  }
+
+  const body = {
+    type: 'image_to_model',
+    file: { type: 'image', file_token: imageToken },
+  };
+
+  const response = await fetch(`${BASE_URL}/task`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw Object.assign(
+      new Error(`tripo image-to-3d error: ${response.status}`),
+      { status: response.status, details: errorText }
+    );
+  }
+
+  const data = await response.json();
+
+  if (data.code !== 0) {
+    throw Object.assign(
+      new Error(`tripo api error: ${data.message || 'unknown'}`),
+      { status: 400 }
+    );
+  }
+
+  return { taskId: data.data.task_id, provider: 'tripo' };
+}
+
+module.exports = { createTask, createImageTask, uploadImage, getStatus };

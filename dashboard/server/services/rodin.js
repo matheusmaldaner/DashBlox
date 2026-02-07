@@ -13,7 +13,7 @@ function getAuth() {
 }
 
 // create a text-to-3d task
-async function createTask({ prompt, tier, format, quality }) {
+async function createTask({ prompt, negativePrompt, tier, format, quality }) {
   if (!prompt || prompt.trim().length === 0) {
     throw Object.assign(new Error('prompt is required'), { status: 400 });
   }
@@ -23,6 +23,9 @@ async function createTask({ prompt, tier, format, quality }) {
   const parts = [];
 
   parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n${prompt.trim()}`);
+  if (negativePrompt) {
+    parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="negative_prompt"\r\n\r\n${negativePrompt.trim()}`);
+  }
   parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="tier"\r\n\r\n${tier || 'Regular'}`);
   parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="geometry_file_format"\r\n\r\n${format || 'glb'}`);
   parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="material"\r\n\r\nPBR`);
@@ -141,4 +144,65 @@ async function downloadResults(taskUuid) {
   return urls;
 }
 
-module.exports = { createTask, getStatus, downloadResults };
+// create an image-to-3d task
+async function createImageTask({ imageBuffer, filename, tier, format, quality }) {
+  if (!imageBuffer) {
+    throw Object.assign(new Error('image is required'), { status: 400 });
+  }
+
+  const boundary = `----RodinBoundary${Date.now()}`;
+  const crlf = '\r\n';
+  const contentType = filename?.endsWith('.png') ? 'image/png' : 'image/jpeg';
+
+  // image file part
+  const fileHeader = `--${boundary}${crlf}Content-Disposition: form-data; name="images"; filename="${filename || 'image.jpg'}"${crlf}Content-Type: ${contentType}${crlf}${crlf}`;
+  const fileFooter = crlf;
+
+  const fileHeaderBuf = Buffer.from(fileHeader);
+  const fileFooterBuf = Buffer.from(fileFooter);
+  const filePart = Buffer.concat([fileHeaderBuf, imageBuffer, fileFooterBuf]);
+
+  const paramParts = [];
+  const addParamBuf = (name, value) => {
+    paramParts.push(Buffer.from(`--${boundary}${crlf}Content-Disposition: form-data; name="${name}"${crlf}${crlf}${value}${crlf}`));
+  };
+
+  addParamBuf('tier', tier || 'Regular');
+  addParamBuf('geometry_file_format', format || 'glb');
+  addParamBuf('material', 'PBR');
+  addParamBuf('quality', quality || 'medium');
+
+  const endBoundary = Buffer.from(`--${boundary}--${crlf}`);
+  const body = Buffer.concat([filePart, ...paramParts, endBoundary]);
+
+  const response = await fetch(`${BASE_URL}/rodin`, {
+    method: 'POST',
+    headers: {
+      Authorization: getAuth(),
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw Object.assign(
+      new Error(`rodin image-to-3d error: ${response.status}`),
+      { status: response.status, details: errorText }
+    );
+  }
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw Object.assign(new Error(`rodin error: ${data.error}`), { status: 400 });
+  }
+
+  return {
+    taskId: data.uuid,
+    subscriptionKey: data.jobs?.subscription_key,
+    provider: 'rodin',
+  };
+}
+
+module.exports = { createTask, createImageTask, getStatus, downloadResults };

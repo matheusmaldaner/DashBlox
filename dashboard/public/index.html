@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/css/audio.css">
   <link rel="stylesheet" href="/css/voice.css">
   <link rel="stylesheet" href="/css/models.css">
+  <link rel="stylesheet" href="/css/models-advanced.css">
   <link rel="stylesheet" href="/css/docs.css">
   <link rel="stylesheet" href="/css/board.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
@@ -94,17 +95,67 @@
     <div class="tab-content active" id="tab-models">
       <!-- model controls -->
       <div class="model-controls glass-panel">
-        <div class="model-prompt-row">
-          <div class="input-group">
-            <label for="modelPrompt">describe your 3d model</label>
-            <input type="text" class="input" id="modelPrompt" placeholder="a medieval wooden chair with carved armrests..." maxlength="500">
-          </div>
-          <button class="btn btn-ghost enhance-btn" id="modelEnhanceBtn">
+        <!-- mode toggle: text vs image -->
+        <div class="model-mode-toggle">
+          <button class="active" data-mode="text" id="modelModeText">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
-            enhance
+            text to 3d
           </button>
+          <button data-mode="image" id="modelModeImage">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            image to 3d
+          </button>
+        </div>
+
+        <!-- text-to-3d input -->
+        <div class="model-text-input" id="modelTextInput">
+          <div class="model-prompt-row">
+            <div class="input-group">
+              <label for="modelPrompt">describe your 3d model</label>
+              <input type="text" class="input" id="modelPrompt" placeholder="a medieval wooden chair with carved armrests..." maxlength="500">
+            </div>
+            <button class="btn btn-ghost enhance-btn" id="modelEnhanceBtn">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              enhance
+            </button>
+          </div>
+
+          <!-- negative prompt -->
+          <div class="model-prompt-row">
+            <div class="input-group">
+              <label for="modelNegativePrompt">negative prompt (optional)</label>
+              <input type="text" class="input" id="modelNegativePrompt" placeholder="low quality, blurry, deformed..." maxlength="300">
+            </div>
+          </div>
+        </div>
+
+        <!-- image-to-3d upload -->
+        <div class="model-image-input" id="modelImageInput" style="display: none;">
+          <div class="model-upload-area" id="modelUploadArea">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <p>drop an image here or click to upload</p>
+            <span>supports jpg, png, webp (max 10mb)</span>
+            <input type="file" id="modelImageFile" accept="image/jpeg,image/png,image/webp">
+          </div>
+          <div class="model-upload-preview" id="modelUploadPreview" style="display: none;">
+            <img id="modelPreviewImg" alt="uploaded reference">
+            <button class="btn btn-ghost btn-sm" id="modelClearImage">clear</button>
+          </div>
         </div>
 
         <!-- enhanced prompt display -->
@@ -122,17 +173,27 @@
               <button data-provider="rodin">Rodin</button>
             </div>
           </div>
-        </div>
 
-        <div class="model-actions-row">
+          <!-- quality tier (rodin) -->
+          <div class="input-group model-quality-group" id="modelQualityGroup" style="display: none;">
+            <label for="modelQuality">quality</label>
+            <select class="select" id="modelQuality">
+              <option value="Sketch">sketch</option>
+              <option value="Regular" selected>regular</option>
+              <option value="Detail">detail</option>
+              <option value="Smooth">smooth</option>
+            </select>
+          </div>
+
           <button class="btn btn-primary generate-btn" id="modelGenerateBtn">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
             </svg>
             generate 3d model
           </button>
-          <div class="model-status" id="modelStatus"></div>
         </div>
+
+        <div class="model-status" id="modelStatus"></div>
 
         <!-- progress bar -->
         <div class="model-progress" id="modelProgress">
@@ -166,6 +227,10 @@
         <button data-format="obj">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           OBJ
+        </button>
+        <button class="roblox-upload-btn" id="modelUploadRoblox">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          upload to roblox
         </button>
       </div>
 
@@ -667,6 +732,7 @@
   <script src="/js/app.js"></script>
   <script src="/js/audio.js"></script>
   <script src="/js/voice.js"></script>
+  <script src="/js/models-viewer.js"></script>
   <script src="/js/models.js"></script>
   <script src="/js/docs.js"></script>
   <script src="/js/board.js"></script>

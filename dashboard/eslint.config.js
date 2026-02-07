@@ -32,8 +32,10 @@ module.exports = [
         requestAnimationFrame: 'readonly',
         ResizeObserver: 'readonly',
         FormData: 'readonly',
+        FileReader: 'readonly',
         URLSearchParams: 'readonly',
         api: 'readonly',
+        modelsViewer: 'readonly',
         // cdn libraries
         marked: 'readonly',
         hljs: 'readonly',

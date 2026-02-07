@@ -217,12 +217,56 @@ describe('GET /api/models/history', () => {
   });
 });
 
-describe('stub routes', () => {
+describe('POST /api/models/upload-roblox', () => {
   const app = createApp();
 
-  test('POST /api/models/upload-roblox returns not implemented', async () => {
-    const res = await request(app).post('/api/models/upload-roblox');
+  test('returns 400 when model_url is missing', async () => {
+    const res = await request(app)
+      .post('/api/models/upload-roblox')
+      .send({});
+
+    expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.error).toBe('not implemented');
+    expect(res.body.error).toBe('model_url is required');
+  });
+});
+
+describe('POST /api/models/generate-image', () => {
+  const app = createApp();
+
+  test('returns 400 when no image is uploaded', async () => {
+    const res = await request(app)
+      .post('/api/models/generate-image')
+      .field('provider', 'meshy');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('image file is required');
+  });
+
+  test('returns 400 for unknown provider', async () => {
+    const imgBuffer = Buffer.from('fake image data');
+    const res = await request(app)
+      .post('/api/models/generate-image')
+      .attach('image', imgBuffer, { filename: 'test.jpg', contentType: 'image/jpeg' })
+      .field('provider', 'unknown');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/unknown provider/);
+  });
+
+  test('generates image-to-3d with meshy provider', async () => {
+    meshy.createImageTask = jest.fn().mockResolvedValue({ taskId: 'meshy-img-1', provider: 'meshy' });
+    Asset3D.create.mockResolvedValue({ _id: 'asset-img-1' });
+
+    const imgBuffer = Buffer.from('fake image data');
+    const res = await request(app)
+      .post('/api/models/generate-image')
+      .attach('image', imgBuffer, { filename: 'test.jpg', contentType: 'image/jpeg' })
+      .field('provider', 'meshy');
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.taskId).toBe('meshy-img-1');
+    expect(res.body.data.assetId).toBe('asset-img-1');
   });
 });

@@ -53,6 +53,19 @@ const api = { // eslint-disable-line no-unused-vars
     return res.json();
   },
 
+  // post form data and return json (for file uploads)
+  async postFormData(url, formData) {
+    const res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || `request failed: ${res.status}`);
+    }
+    return res.json();
+  },
+
   // delete json
   async deleteJSON(url) {
     const res = await fetch(url, { method: 'DELETE' });
