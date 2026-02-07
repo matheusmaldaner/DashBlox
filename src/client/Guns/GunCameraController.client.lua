@@ -1,6 +1,6 @@
 --!strict
 -- CameraController - Fortnite-style over-the-shoulder camera with cursor lock
--- Active in both Gun and Build modes
+-- third-person camera controller for gun mode
 -- Supports mouse, gamepad (Xbox/PlayStation), and touch input
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")

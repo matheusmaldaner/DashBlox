@@ -38,11 +38,7 @@ local EquipGunRemote = RemoteService.GetRemote("EquipGun") :: RemoteEvent
 local UnequipGunRemote = RemoteService.GetRemote("UnequipGun") :: RemoteEvent
 local ReloadGunRemote = RemoteService.GetRemote("ReloadGun") :: RemoteEvent
 local GiveLoadoutRemote = RemoteService.GetRemote("GiveLoadout") :: RemoteEvent
-local PickaxePlayerDamageRemote = RemoteService.GetRemote("PickaxePlayerDamage") :: RemoteEvent
-
 local EQUIPPED_GUN_NAME = "EquippedGun"
-local PICKAXE_PLAYER_DAMAGE = 20 -- damage dealt to players with pickaxe
-local PICKAXE_RANGE = 20 -- max distance for pickaxe hit validation
 
 -- Match service bindable (for team checks)
 local MatchServiceBindable: BindableFunction? = nil
@@ -97,7 +93,7 @@ local function GetAddDamageDealtEvent(): BindableEvent?
 end
 
 -- Default loadout for free roam / testing
-local DEFAULT_LOADOUT = { "AR", "PumpShotgun", "SMG", "Sniper" }
+local DEFAULT_LOADOUT = { "AR", "PumpShotgun", "SMG", "Sniper", "Pistol" }
 
 -- Player states tracked on server
 type PlayerGunState = {
@@ -388,8 +384,7 @@ local function ProcessPelletHit(
 	gunStats: GunConfig.GunStats,
 	origin: Vector3,
 	result: RaycastResult?,
-	playerDamageAccumulator: { [Player]: { damage: number, headshot: boolean, position: Vector3 } }?,
-	buildingDamageAccumulator: { [BasePart]: number }?
+	playerDamageAccumulator: { [Player]: { damage: number, headshot: boolean, position: Vector3 } }?
 ): (Player?, number, boolean)
 	if not result then
 		return nil, 0, false
@@ -399,10 +394,6 @@ local function ProcessPelletHit(
 	local hitPlayer = GetPlayerFromPart(hitPart)
 
 	if not hitPlayer then
-		-- Check if hit a building piece
-		if buildingDamageAccumulator and hitPart:IsA("BasePart") then
-			buildingDamageAccumulator[hitPart] = (buildingDamageAccumulator[hitPart] or 0) + gunStats.BaseDamage
-		end
 		return nil, 0, false
 	end
 
@@ -579,7 +570,6 @@ local function ProcessShot(player: Player, data: any)
 	if pelletCount and pelletCount > 1 then
 		-- SHOTGUN: Fire multiple pellets with spread
 		local playerDamageAccumulator: { [Player]: { damage: number, headshot: boolean, position: Vector3 } } = {}
-		local buildingDamageAccumulator: { [BasePart]: number } = {}
 		local tracerData: { { endPos: Vector3, hitPlayerId: number? } } = {}
 
 		for _ = 1, pelletCount do
@@ -598,7 +588,7 @@ local function ProcessShot(player: Player, data: any)
 				end
 
 				-- Process this pellet hit (accumulates damage)
-				ProcessPelletHit(player, gunStats, origin, result, playerDamageAccumulator, buildingDamageAccumulator)
+				ProcessPelletHit(player, gunStats, origin, result, playerDamageAccumulator)
 			else
 				endPos = origin + pelletDirection * gunStats.MaxRange
 			end
@@ -621,26 +611,6 @@ local function ProcessShot(player: Player, data: any)
 			ApplyDamageToPlayer(player, hitPlayer, damageInfo.damage, damageInfo.headshot, damageInfo.position, gunName)
 		end
 
-		-- Apply accumulated damage to buildings
-		local DamageBuildingBindable = ServerScriptService:FindFirstChild("DamageBuildingBindable")
-		if DamageBuildingBindable and DamageBuildingBindable:IsA("BindableFunction") then
-			local totalBuildingDamage = 0
-			for buildingPart, damage in buildingDamageAccumulator do
-				local wasBuilding = DamageBuildingBindable:Invoke(buildingPart, damage)
-				if wasBuilding then
-					totalBuildingDamage = totalBuildingDamage + damage
-				end
-			end
-
-			if totalBuildingDamage > 0 then
-				GunHitRemote:FireClient(player, {
-					damage = totalBuildingDamage,
-					killed = false,
-					headshot = false,
-					hitBuilding = true,
-				})
-			end
-		end
 	else
 		-- REGULAR GUN: Single raycast
 		local result = workspace:Raycast(origin, baseDirection * gunStats.MaxRange, raycastParams)
@@ -676,20 +646,7 @@ local function ProcessShot(player: Player, data: any)
 		local hitPlayer = GetPlayerFromPart(hitPart)
 
 		if not hitPlayer then
-			-- Check if hit a building piece
-			local DamageBuildingBindable = ServerScriptService:FindFirstChild("DamageBuildingBindable")
-			if DamageBuildingBindable and DamageBuildingBindable:IsA("BindableFunction") and hitPart:IsA("BasePart") then
-				local wasBuilding = DamageBuildingBindable:Invoke(hitPart, gunStats.BaseDamage)
-				if wasBuilding then
-					GunHitRemote:FireClient(player, {
-						damage = gunStats.BaseDamage,
-						killed = false,
-						headshot = false,
-						hitBuilding = true,
-					})
-				end
-			end
-			return -- Hit environment or building
+			return -- hit environment
 		end
 
 		-- Don't allow self-damage
@@ -721,93 +678,63 @@ local function ProcessShot(player: Player, data: any)
 	end
 end
 
---------------------------------------------------
--- Pickaxe Player Damage Handler
---------------------------------------------------
-
-local function HandlePickaxePlayerDamage(attacker: Player, data: any)
-	-- Validate attacker
-	local attackerChar = attacker.Character
-	if not attackerChar then
-		return
-	end
-
-	local attackerHumanoid = attackerChar:FindFirstChildOfClass("Humanoid")
-	if not attackerHumanoid or attackerHumanoid.Health <= 0 then
-		return
-	end
-
-	local attackerHRP = attackerChar:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not attackerHRP then
-		return
-	end
-
-	-- Validate target
-	local targetPlayer = data.targetPlayer
-	if not targetPlayer or typeof(targetPlayer) ~= "Instance" or not targetPlayer:IsA("Player") then
-		return
-	end
-
-	-- Can't hit yourself
-	if targetPlayer == attacker then
-		return
-	end
-
-	-- Check if on same team (no friendly fire with pickaxe)
-	local attackerTeam = GetPlayerTeamId(attacker)
-	local targetTeam = GetPlayerTeamId(targetPlayer)
-	if attackerTeam and targetTeam and attackerTeam == targetTeam then
-		return -- same team, no damage
-	end
-
-	local targetChar = targetPlayer.Character
-	if not targetChar then
-		return
-	end
-
-	local targetHumanoid = targetChar:FindFirstChildOfClass("Humanoid")
-	if not targetHumanoid or targetHumanoid.Health <= 0 then
-		return
-	end
-
-	local targetHRP = targetChar:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not targetHRP then
-		return
-	end
-
-	-- Validate distance
-	local distance = (attackerHRP.Position - targetHRP.Position).Magnitude
-	if distance > PICKAXE_RANGE then
-		return
-	end
-
-	-- Apply damage via TakeDamageBindable
-	local takeDamage = GetTakeDamageBindable()
-	if takeDamage then
-		takeDamage:Invoke(targetPlayer, PICKAXE_PLAYER_DAMAGE, attacker, false)
-	end
-
-	-- Fire damage event for attacker feedback
-	DamageDealtRemote:FireClient(attacker, {
-		damage = PICKAXE_PLAYER_DAMAGE,
-		isHeadshot = false,
-		targetPlayer = targetPlayer,
-	})
-end
-
 -- Connect events
 FireGunRemote.OnServerEvent:Connect(ProcessShot)
 EquipGunRemote.OnServerEvent:Connect(HandleEquipGun)
 UnequipGunRemote.OnServerEvent:Connect(HandleUnequipGun)
 ReloadGunRemote.OnServerEvent:Connect(HandleReloadGun)
-PickaxePlayerDamageRemote.OnServerEvent:Connect(HandlePickaxePlayerDamage)
 
--- Give default loadout when character spawns (for free roam / testing)
+-- create a tool in the player's backpack for a weapon
+local function CreateWeaponTool(player: Player, gunName: string, slotIndex: number)
+	local backpack = player:FindFirstChild("Backpack")
+	if not backpack then
+		return
+	end
+
+	local gunStats = GunConfig.Guns[gunName]
+	if not gunStats then
+		return
+	end
+
+	local tool = Instance.new("Tool")
+	tool.Name = gunName
+	tool.CanBeDropped = false
+	tool.RequiresHandle = false
+	tool:SetAttribute("GunName", gunName)
+	tool:SetAttribute("SlotIndex", slotIndex)
+
+	-- equip/unequip hooks
+	tool.Equipped:Connect(function()
+		HandleEquipGun(player, gunName)
+	end)
+
+	tool.Unequipped:Connect(function()
+		HandleUnequipGun(player)
+	end)
+
+	tool.Parent = backpack
+end
+
+-- give default loadout when character spawns
 local function OnCharacterAdded(player: Player)
-	-- Wait a moment for character to fully load
 	task.wait(0.5)
 
-	-- Give default loadout if not in a match (MatchService will override if in match)
+	-- clear old tools from backpack
+	local backpack = player:FindFirstChild("Backpack")
+	if backpack then
+		for _, child in backpack:GetChildren() do
+			if child:IsA("Tool") and child:GetAttribute("GunName") then
+				child:Destroy()
+			end
+		end
+	end
+
+	-- create tool for each weapon in loadout
+	for i, gunName in DEFAULT_LOADOUT do
+		CreateWeaponTool(player, gunName, i)
+	end
+
+	-- also send loadout to client gun controller
 	GiveLoadoutRemote:FireClient(player, DEFAULT_LOADOUT)
 end
 

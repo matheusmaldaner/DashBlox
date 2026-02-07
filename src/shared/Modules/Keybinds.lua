@@ -7,24 +7,14 @@ local changedEvent = Instance.new("BindableEvent")
 Keybinds.Changed = changedEvent
 
 local keybinds: { [string]: Enum.KeyCode | string } = {
-	-- building pieces (auto-enter build mode)
-	wall = "Q",
-	floor = "X",
-	ramp = "E",
-	pyramid = "V",
-	-- edit mode
-	edit = "G",
-	-- tools and weapons
-	pickaxe = "One",
-	weapon1 = "Two",
-	weapon2 = "Three",
-	weapon3 = "Four",
-	weapon4 = "Five",
-	weapon5 = "Six",
+	-- weapons
+	weapon1 = "One",
+	weapon2 = "Two",
+	weapon3 = "Three",
+	weapon4 = "Four",
+	weapon5 = "Five",
 	-- actions
 	reload = "R",
-	rotate = "R",
-	repair = "F",
 	sprint = "LeftShift",
 	crouch = "LeftControl",
 	crouchToggle = "C",
@@ -92,20 +82,12 @@ end
 
 -- get human-readable action name
 local actionDisplayNames: { [string]: string } = {
-	wall = "Wall",
-	floor = "Floor",
-	ramp = "Ramp",
-	pyramid = "Pyramid",
-	edit = "Edit",
-	pickaxe = "Pickaxe",
 	weapon1 = "Weapon 1",
 	weapon2 = "Weapon 2",
 	weapon3 = "Weapon 3",
 	weapon4 = "Weapon 4",
 	weapon5 = "Weapon 5",
 	reload = "Reload",
-	rotate = "Rotate",
-	repair = "Repair",
 	sprint = "Sprint",
 	crouch = "Crouch (Hold)",
 	crouchToggle = "Crouch (Toggle)",
@@ -124,8 +106,7 @@ end
 -- get keybind categories for organized UI
 function Keybinds.GetCategories(): { { name: string, actions: { string } } }
 	return {
-		{ name = "Building", actions = { "wall", "floor", "ramp", "pyramid", "edit", "rotate", "repair" } },
-		{ name = "Combat", actions = { "pickaxe", "weapon1", "weapon2", "weapon3", "weapon4", "weapon5", "reload", "dropItem" } },
+		{ name = "Combat", actions = { "weapon1", "weapon2", "weapon3", "weapon4", "weapon5", "reload", "dropItem" } },
 		{ name = "Movement", actions = { "sprint", "crouch", "crouchToggle" } },
 		{ name = "Menus", actions = { "quests", "settings", "achievements", "queue", "locker" } },
 	}

@@ -15,31 +15,8 @@ local remoteRegistry: { [string]: string } = {
 	["GunFired"] = "RemoteEvent",
 	["ReloadAllWeapons"] = "RemoteEvent", -- reset all weapon ammo to full (round start)
 
-	-- Building system
-	["BuildRequest"] = "RemoteEvent",
-	["BuildResponse"] = "RemoteEvent",
-	["EditRequest"] = "RemoteEvent",
-	["EditResponse"] = "RemoteEvent",
-	["DamageBuildingRequest"] = "RemoteEvent",
-	["BuildingHealthChanged"] = "RemoteEvent",
-	["DestructionEffect"] = "RemoteEvent",
-	["RepairRequest"] = "RemoteEvent",
-	["RepairResponse"] = "RemoteEvent",
-	["MaterialsUpdated"] = "RemoteEvent",
-
 	-- Sound system
 	["PlaySound"] = "RemoteEvent",
-
-	-- Harvesting system
-	["HarvestRequest"] = "RemoteEvent",
-	["HarvestResponse"] = "RemoteEvent",
-	["HarvestableHealthChanged"] = "RemoteEvent",
-	["HarvestableDestroyed"] = "RemoteEvent",
-
-	-- Pickaxe system
-	["PickaxeEquip"] = "RemoteEvent",
-	["PickaxeSwing"] = "RemoteEvent",
-	["PickaxePlayerDamage"] = "RemoteEvent", -- pickaxe hit on another player
 
 	-- Player stats system (runtime)
 	["PlayerStatsChanged"] = "RemoteEvent",

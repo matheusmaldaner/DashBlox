@@ -5,7 +5,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local _GameModeService = require(ReplicatedStorage.Modules.GameModeService)
 local Settings = require(ReplicatedStorage.Modules.Settings)
 local MatchStateClient = require(ReplicatedStorage.Modules.MatchStateClient)
 
@@ -35,7 +34,7 @@ local centerDot: Frame? = nil
 local currentSpread = 0
 local targetSpread = 0
 local isVisible = false
-local __isGunCrosshair = false -- true when gun is equipped, false for build mode dot
+local __isGunCrosshair = false -- true when gun is equipped
 
 -- Create a single crosshair bar
 local function createBar(name: string): Frame
@@ -123,7 +122,7 @@ function CrosshairController.Initialize()
 		end
 	end
 
-	-- Center dot (used for build mode)
+	-- Center dot
 	centerDot = Instance.new("Frame")
 	centerDot.Name = "CenterDot"
 	centerDot.BackgroundColor3 = config.color
@@ -182,7 +181,7 @@ function CrosshairController.Initialize()
 			if _value == true then
 				CrosshairController.HideAll()
 			else
-				-- restore crosshair when menu closes (show dot for build mode)
+				-- restore crosshair when menu closes
 				CrosshairController.ShowDot()
 			end
 		end
@@ -255,7 +254,7 @@ function CrosshairController.Show()
 	end
 end
 
--- Hide gun crosshair (show dot instead for build mode)
+-- Hide gun crosshair (show dot instead)
 function CrosshairController.Hide()
 	isVisible = false
 	_isGunCrosshair = false
@@ -284,7 +283,7 @@ function CrosshairController.HideAll()
 	targetSpread = 0
 end
 
--- Show only the center dot (for build mode)
+-- Show only the center dot
 function CrosshairController.ShowDot()
 	isVisible = false
 	_isGunCrosshair = false

@@ -361,9 +361,6 @@ local currentSlot = 1
 -- This ensures ammo persists even when weapons move between slots
 local weaponAmmo: { [string]: number } = {}
 
--- Previous weapon slot tracking (for build mode restoration)
-local previousSlotBeforeBuildMode: number? = nil
-
 -- forward declarations
 local UpdateCrosshair: () -> ()
 local SwitchToSlot: (slotIndex: number) -> ()
@@ -1371,32 +1368,6 @@ local function ExitADS()
 	UpdateCrosshair()
 end
 
--- auto-unequip gun when entering build, pickaxe, or edit mode
-GameModeService.OnModeChanged(function(mode)
-	if mode == "Build" or mode == "Pickaxe" or mode == "Edit" then
-		-- Save current slot before entering non-gun mode
-		if currentSlot >= 1 and currentSlot <= 5 then
-			previousSlotBeforeBuildMode = currentSlot
-		end
-		-- Unequip gun if equipped
-		if state.equipped then
-			UnequipGun()
-		end
-	elseif mode == "Gun" then
-		-- Restore previous weapon when returning to Gun mode
-		if previousSlotBeforeBuildMode then
-			local slotToRestore = previousSlotBeforeBuildMode
-			previousSlotBeforeBuildMode = nil
-			-- Defer to allow mode change to complete
-			task.defer(function()
-				if GameModeService.IsGunMode() and loadout[slotToRestore] then
-					SwitchToSlot(slotToRestore)
-				end
-			end)
-		end
-	end
-end)
-
 MatchStateClient.OnCombatChanged(function(enabled)
 	if not enabled and state.equipped then
 		UnequipGun()
@@ -1431,9 +1402,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed then
 		local slotIndex = getSlotIndexForKey(input.KeyCode)
 		if slotIndex then
-			-- Always switch to Gun mode (exits Build mode if needed)
-			GameModeService.SetMode("Gun")
-			-- SwitchToSlot handles both weapons and non-weapons correctly
 			SwitchToSlot(slotIndex)
 		end
 	end
@@ -1788,7 +1756,7 @@ function SwitchToSlot(slotIndex: number)
 		EquipGun(gunName)
 	end
 
-	-- Notify hotbar of slot change (slot + 1 because hotbar slot 1 is pickaxe)
+	-- notify hotbar of slot change
 	notifyAmmoUI("SlotChanged", slotIndex + 1, loadout)
 end
 
