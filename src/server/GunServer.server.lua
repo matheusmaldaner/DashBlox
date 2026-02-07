@@ -703,15 +703,6 @@ local function CreateWeaponTool(player: Player, gunName: string, slotIndex: numb
 	tool:SetAttribute("GunName", gunName)
 	tool:SetAttribute("SlotIndex", slotIndex)
 
-	-- equip/unequip hooks
-	tool.Equipped:Connect(function()
-		HandleEquipGun(player, gunName)
-	end)
-
-	tool.Unequipped:Connect(function()
-		HandleUnequipGun(player)
-	end)
-
 	tool.Parent = backpack
 end
 
