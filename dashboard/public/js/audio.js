@@ -1,11 +1,13 @@
-// audio tab - sfx generation with 10 parallel variations
+// audio tab - sfx generation with configurable parallel variations
 
 (function () {
-  const VARIATION_COUNT = 10;
+  const DEFAULT_VARIATIONS = 4;
+  const MAX_VARIATIONS = 10;
   const STAGGER_DELAY = 600;
 
   // audio data storage
-  const audioData = new Array(VARIATION_COUNT).fill(null);
+  let audioData = new Array(DEFAULT_VARIATIONS).fill(null);
+  let currentVariationCount = DEFAULT_VARIATIONS;
   let currentDownloadIndex = -1;
   let currentlyPlaying = null;
 
@@ -14,11 +16,40 @@
     '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
   const pauseIcon =
     '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+  const downloadIcon =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
 
   document.addEventListener('DOMContentLoaded', () => {
     initAudioTab();
     loadHistory();
   });
+
+  function buildAudioCards(count) {
+    const grid = document.getElementById('audioGrid');
+    if (!grid) return;
+
+    stopAllAudio();
+    audioData = new Array(count).fill(null);
+    currentVariationCount = count;
+
+    grid.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const card = document.createElement('div');
+      card.className = 'audio-card';
+      card.id = `audioCard${i}`;
+      card.innerHTML = `
+        <div class="audio-card-header">
+          <span class="audio-card-number">#${i + 1}</span>
+          <span class="status-badge waiting">waiting</span>
+        </div>
+        <div class="audio-card-actions">
+          <button class="play-btn" disabled>${playIcon}</button>
+          <button class="download-btn" disabled>${downloadIcon}</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    }
+  }
 
   function initAudioTab() {
     // slider value displays
@@ -26,6 +57,8 @@
     const durationValue = document.getElementById('sfxDurationValue');
     const influenceSlider = document.getElementById('sfxInfluence');
     const influenceValue = document.getElementById('sfxInfluenceValue');
+    const variationsSlider = document.getElementById('sfxVariations');
+    const variationsValue = document.getElementById('sfxVariationsValue');
 
     if (durationSlider) {
       durationSlider.addEventListener('input', () => {
@@ -39,6 +72,17 @@
         influenceValue.textContent = influenceSlider.value;
       });
     }
+
+    if (variationsSlider) {
+      variationsSlider.addEventListener('input', () => {
+        const count = parseInt(variationsSlider.value, 10);
+        variationsValue.textContent = count;
+        buildAudioCards(count);
+      });
+    }
+
+    // build initial cards
+    buildAudioCards(DEFAULT_VARIATIONS);
 
     // generate button
     const generateBtn = document.getElementById('sfxGenerateBtn');
@@ -63,16 +107,19 @@
 
     const duration = parseFloat(document.getElementById('sfxDuration').value);
     const influence = parseFloat(document.getElementById('sfxInfluence').value);
+    const variationCount = currentVariationCount;
     const generateBtn = document.getElementById('sfxGenerateBtn');
+    const variationsSlider = document.getElementById('sfxVariations');
     const statusEl = document.getElementById('sfxStatus');
 
     // reset state
     generateBtn.disabled = true;
-    audioData.fill(null);
+    if (variationsSlider) variationsSlider.disabled = true;
+    audioData = new Array(variationCount).fill(null);
     stopAllAudio();
 
     // reset all cards
-    for (let i = 0; i < VARIATION_COUNT; i++) {
+    for (let i = 0; i < variationCount; i++) {
       setCardStatus(i, 'waiting');
       setCardButtons(i, false);
     }
@@ -80,12 +127,12 @@
     let completedCount = 0;
     let successCount = 0;
 
-    statusEl.innerHTML = '<div class="spinner"></div> generating... 0/' + VARIATION_COUNT;
+    statusEl.innerHTML = '<div class="spinner"></div> generating... 0/' + variationCount;
     statusEl.className = 'audio-status';
 
     const promises = [];
 
-    for (let i = 0; i < VARIATION_COUNT; i++) {
+    for (let i = 0; i < variationCount; i++) {
       const delayedRequest = (async () => {
         await sleep(i * STAGGER_DELAY);
         setCardStatus(i, 'generating');
@@ -109,16 +156,17 @@
 
         completedCount++;
         statusEl.innerHTML =
-          completedCount < VARIATION_COUNT
-            ? `<div class="spinner"></div> generating... ${completedCount}/${VARIATION_COUNT} (${successCount} ready)`
-            : `done - ${successCount}/${VARIATION_COUNT} generated`;
-        statusEl.className = 'audio-status' + (successCount === 0 && completedCount === VARIATION_COUNT ? ' error' : '');
+          completedCount < variationCount
+            ? `<div class="spinner"></div> generating... ${completedCount}/${variationCount} (${successCount} ready)`
+            : `done - ${successCount}/${variationCount} generated`;
+        statusEl.className = 'audio-status' + (successCount === 0 && completedCount === variationCount ? ' error' : '');
       })();
       promises.push(delayedRequest);
     }
 
     await Promise.all(promises);
     generateBtn.disabled = false;
+    if (variationsSlider) variationsSlider.disabled = false;
 
     // save generation metadata to history
     if (successCount > 0) {

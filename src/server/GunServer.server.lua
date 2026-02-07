@@ -29,6 +29,17 @@ local function GetMatchDamageEvent(): BindableEvent?
 	return MatchDamageEvent
 end
 
+-- ZombieDamage bindable (created by ZombieSpawner/ZombieDamage)
+local ZombieDamageBindable: BindableFunction? = nil
+
+local function GetZombieDamageBindable(): BindableFunction?
+	if ZombieDamageBindable then
+		return ZombieDamageBindable
+	end
+	ZombieDamageBindable = ServerScriptService:FindFirstChild("ZombieDamageBindable") :: BindableFunction?
+	return ZombieDamageBindable
+end
+
 -- Remotes
 local FireGunRemote = RemoteService.GetRemote("FireGun") :: RemoteEvent
 local GunHitRemote = RemoteService.GetRemote("GunHit") :: RemoteEvent
@@ -394,6 +405,32 @@ local function ProcessPelletHit(
 	local hitPlayer = GetPlayerFromPart(hitPart)
 
 	if not hitPlayer then
+		-- check if pellet hit a zombie
+		local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+		if hitModel and hitModel:GetAttribute("IsZombie") then
+			local distance = (result.Position - origin).Magnitude
+			local isHeadshot = IsHeadshot(hitPart)
+			local damage = GunUtility.CalculateDamage(gunStats, distance, isHeadshot)
+
+			-- apply pellet damage immediately via bindable
+			local zombieBindable = GetZombieDamageBindable()
+			if zombieBindable then
+				-- set creator tag for kill attribution
+				local zombieHumanoid = hitModel:FindFirstChildOfClass("Humanoid")
+				if zombieHumanoid then
+					local existingCreator = zombieHumanoid:FindFirstChild("creator")
+					if existingCreator then
+						existingCreator:Destroy()
+					end
+					local creatorTag = Instance.new("ObjectValue")
+					creatorTag.Name = "creator"
+					creatorTag.Value = player
+					creatorTag.Parent = zombieHumanoid
+				end
+
+				zombieBindable:Invoke(player, hitModel, damage, isHeadshot, result.Position)
+			end
+		end
 		return nil, 0, false
 	end
 
@@ -646,7 +683,32 @@ local function ProcessShot(player: Player, data: any)
 		local hitPlayer = GetPlayerFromPart(hitPart)
 
 		if not hitPlayer then
-			return -- hit environment
+			-- check if hit a zombie instead
+			local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+			if hitModel and hitModel:GetAttribute("IsZombie") then
+				local zombieBindable = GetZombieDamageBindable()
+				if zombieBindable then
+					local distance = (result.Position - origin).Magnitude
+					local isHeadshot = IsHeadshot(hitPart)
+					local damage = GunUtility.CalculateDamage(gunStats, distance, isHeadshot)
+
+					-- set creator tag for kill attribution
+					local zombieHumanoid = hitModel:FindFirstChildOfClass("Humanoid")
+					if zombieHumanoid then
+						local existingCreator = zombieHumanoid:FindFirstChild("creator")
+						if existingCreator then
+							existingCreator:Destroy()
+						end
+						local creatorTag = Instance.new("ObjectValue")
+						creatorTag.Name = "creator"
+						creatorTag.Value = player
+						creatorTag.Parent = zombieHumanoid
+					end
+
+					zombieBindable:Invoke(player, hitModel, damage, isHeadshot, result.Position)
+				end
+			end
+			return
 		end
 
 		-- Don't allow self-damage

@@ -108,6 +108,16 @@ local remoteRegistry: { [string]: string } = {
 	["TeleportFailed"] = "RemoteEvent",
 	["TeleportingToLobby"] = "RemoteEvent",
 
+	-- Zombie system
+	["ZombieSpawned"] = "RemoteEvent",   -- server -> all clients: zombie spawned
+	["ZombieDied"] = "RemoteEvent",      -- server -> all clients: zombie died (dissolve)
+	["ZombieDamaged"] = "RemoteEvent",   -- server -> attacker: damage feedback
+	["PlayerDamaged"] = "RemoteEvent",   -- server -> victim: zombie attacked you
+	["WaveStarted"] = "RemoteEvent",     -- server -> all clients: new wave beginning
+	["WaveCompleted"] = "RemoteEvent",   -- server -> all clients: wave cleared
+	["WaveCountdown"] = "RemoteEvent",   -- server -> all clients: rest period timer
+	["WaveStateSync"] = "RemoteFunction", -- client -> server: request current wave state
+
 	-- Cosmetics/Locker system
 	["GetCosmetics"] = "RemoteFunction", -- get player's cosmetic data
 	["EquipCosmetic"] = "RemoteFunction", -- equip item (returns success)
