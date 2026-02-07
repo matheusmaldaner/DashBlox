@@ -1,9 +1,9 @@
 --!strict
 
--- server module: zombie pathfinding AI, target selection, touch damage
+-- server module: centralized zombie AI with direct chase, optimized for performance
+-- single heartbeat loop processes all zombies; no PathfindingService dependency
 -- required by ZombieSpawner.server.lua
 
-local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,18 +17,9 @@ local ZombieAI = {}
 -- Constants
 --------------------------------------------------
 
-local PATH_RECOMPUTE_INTERVAL = 1.0
-local DIRECT_CHASE_DISTANCE = 15
-local STUCK_CHECK_INTERVAL = 3.0
-local STUCK_DISTANCE_THRESHOLD = 2
-
--- reusable pathfinding agent params
-local AGENT_PARAMS = {
-	AgentRadius = 2,
-	AgentHeight = 5,
-	AgentCanJump = true,
-	AgentCanClimb = false,
-}
+local TARGET_REVAL_FRAMES = 6 -- re-evaluate nearest player every 6 frames (~0.1s at 60fps)
+local JUMP_RAY_DISTANCE = 3.0 -- forward raycast distance for wall detection
+local JUMP_RAY_HEIGHT_OFFSET = 1.0 -- ray origin offset above rootpart center (knee height)
 
 --------------------------------------------------
 -- Types
@@ -44,7 +35,29 @@ export type ZombieData = {
 	targetPlayer: Player?,
 	connections: { RBXScriptConnection },
 	aiState: string,
+	-- internal: managed by StartAI/StopAI
+	_registryIndex: number?,
+	_staggerBucket: number?,
 }
+
+--------------------------------------------------
+-- Centralized Registry State
+--------------------------------------------------
+
+local registry: { ZombieData } = {}
+local registryCount: number = 0
+local frameCounter: number = 0
+
+-- player position cache, rebuilt once per frame
+local cachedPlayers: { { player: Player, rootPart: BasePart, position: Vector3 } } = {}
+local cachedPlayerCount: number = 0
+
+-- single shared raycast params (filter swapped per zombie)
+local jumpRayParams = RaycastParams.new()
+jumpRayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+-- the one heartbeat connection for all zombies
+local heartbeatConnection: RBXScriptConnection? = nil
 
 --------------------------------------------------
 -- Helpers
@@ -64,10 +77,13 @@ local function GetPlayerFromPart(part: BasePart): Player?
 	return nil
 end
 
--- find the nearest alive player to a world position
-function ZombieAI.GetNearestPlayer(position: Vector3): Player?
-	local nearestPlayer: Player? = nil
-	local nearestDist = math.huge
+--------------------------------------------------
+-- Player Position Cache
+--------------------------------------------------
+
+-- rebuild the player cache once per frame (called at top of heartbeat)
+local function CachePlayerPositions()
+	cachedPlayerCount = 0
 
 	for _, player in Players:GetPlayers() do
 		local character = player.Character
@@ -85,10 +101,38 @@ function ZombieAI.GetNearestPlayer(position: Vector3): Player?
 			continue
 		end
 
-		local dist = (rootPart.Position - position).Magnitude
-		if dist < nearestDist then
-			nearestDist = dist
-			nearestPlayer = player
+		cachedPlayerCount += 1
+		local entry = cachedPlayers[cachedPlayerCount]
+		if entry then
+			entry.player = player
+			entry.rootPart = rootPart
+			entry.position = rootPart.Position
+		else
+			cachedPlayers[cachedPlayerCount] = {
+				player = player,
+				rootPart = rootPart,
+				position = rootPart.Position,
+			}
+		end
+	end
+end
+
+--------------------------------------------------
+-- Target Selection (uses cache, squared distance)
+--------------------------------------------------
+
+-- find the nearest alive player to a world position
+function ZombieAI.GetNearestPlayer(position: Vector3): Player?
+	local nearestPlayer: Player? = nil
+	local nearestDistSq = math.huge
+
+	for i = 1, cachedPlayerCount do
+		local entry = cachedPlayers[i]
+		local delta = entry.position - position
+		local distSq = delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z
+		if distSq < nearestDistSq then
+			nearestDistSq = distSq
+			nearestPlayer = entry.player
 		end
 	end
 
@@ -96,31 +140,7 @@ function ZombieAI.GetNearestPlayer(position: Vector3): Player?
 end
 
 --------------------------------------------------
--- Pathfinding
---------------------------------------------------
-
--- compute a path from zombie to target, returns waypoints or nil
-local function ComputePath(startPosition: Vector3, targetPosition: Vector3): { PathWaypoint }?
-	local path = PathfindingService:CreatePath(AGENT_PARAMS)
-
-	local success, err = pcall(function()
-		path:ComputeAsync(startPosition, targetPosition)
-	end)
-
-	if not success then
-		warn("[ZombieAI] path compute failed:", err)
-		return nil
-	end
-
-	if path.Status == Enum.PathStatus.Success then
-		return path:GetWaypoints()
-	end
-
-	return nil
-end
-
---------------------------------------------------
--- Touch Damage
+-- Touch Damage (unchanged from original)
 --------------------------------------------------
 
 -- sets up touch damage on the zombie's torso
@@ -178,10 +198,105 @@ local function SetupTouchDamage(zombieData: ZombieData)
 end
 
 --------------------------------------------------
--- Main AI Loop
+-- Centralized Heartbeat Loop
 --------------------------------------------------
 
--- starts the AI heartbeat loop for one zombie
+local function EnsureHeartbeat()
+	if heartbeatConnection then
+		return
+	end
+
+	heartbeatConnection = RunService.Heartbeat:Connect(function()
+		if registryCount == 0 then
+			return
+		end
+
+		frameCounter += 1
+
+		-- step 1: cache all player positions once
+		CachePlayerPositions()
+
+		-- step 2: no alive players — idle all zombies
+		if cachedPlayerCount == 0 then
+			for i = 1, registryCount do
+				local zd = registry[i]
+				if zd.aiState ~= "dying" then
+					local rp = zd.model.PrimaryPart
+					if rp then
+						zd.humanoid:MoveTo(rp.Position)
+					end
+				end
+			end
+			return
+		end
+
+		-- step 3: process each zombie
+		local currentBucket = frameCounter % TARGET_REVAL_FRAMES
+
+		for i = 1, registryCount do
+			local zd = registry[i]
+
+			if zd.aiState == "dying" then
+				continue
+			end
+
+			local rootPart = zd.model.PrimaryPart
+			if not rootPart then
+				continue
+			end
+
+			local zombiePos = rootPart.Position
+
+			-- staggered target re-evaluation
+			if currentBucket == zd._staggerBucket then
+				zd.targetPlayer = ZombieAI.GetNearestPlayer(zombiePos)
+			end
+
+			-- resolve target position
+			local target = zd.targetPlayer
+			if not target then
+				zd.humanoid:MoveTo(zombiePos)
+				continue
+			end
+
+			local targetCharacter = target.Character
+			if not targetCharacter then
+				zd.targetPlayer = nil
+				zd.humanoid:MoveTo(zombiePos)
+				continue
+			end
+
+			local targetRoot = targetCharacter:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if not targetRoot then
+				zd.targetPlayer = nil
+				zd.humanoid:MoveTo(zombiePos)
+				continue
+			end
+
+			-- direct chase
+			zd.humanoid:MoveTo(targetRoot.Position)
+
+			-- raycast-based jump detection
+			local moveDirection = zd.humanoid.MoveDirection
+			if moveDirection.Magnitude > 0.1 then
+				local rayOrigin = zombiePos + Vector3.new(0, JUMP_RAY_HEIGHT_OFFSET, 0)
+				local rayDirection = moveDirection.Unit * JUMP_RAY_DISTANCE
+
+				jumpRayParams.FilterDescendantsInstances = { zd.model }
+				local result = workspace:Raycast(rayOrigin, rayDirection, jumpRayParams)
+				if result then
+					zd.humanoid.Jump = true
+				end
+			end
+		end
+	end)
+end
+
+--------------------------------------------------
+-- Public API
+--------------------------------------------------
+
+-- registers a zombie into the centralized AI loop
 function ZombieAI.StartAI(zombieData: ZombieData)
 	zombieData.aiState = "chasing"
 	zombieData.connections = zombieData.connections or {}
@@ -189,110 +304,42 @@ function ZombieAI.StartAI(zombieData: ZombieData)
 	-- set up touch damage
 	SetupTouchDamage(zombieData)
 
-	local lastPathTime = 0
-	local currentWaypoints: { PathWaypoint } = {}
-	local waypointIndex = 1
-	local lastPosition = Vector3.zero
-	local lastStuckCheck = tick()
+	-- register in centralized registry
+	registryCount += 1
+	registry[registryCount] = zombieData
+	zombieData._registryIndex = registryCount
+	zombieData._staggerBucket = registryCount % TARGET_REVAL_FRAMES
 
-	local aiConnection = RunService.Heartbeat:Connect(function()
-		if zombieData.aiState == "dying" then
-			return
-		end
-
-		local rootPart = zombieData.model.PrimaryPart
-		if not rootPart then
-			return
-		end
-
-		-- find target player
-		local target = ZombieAI.GetNearestPlayer(rootPart.Position)
-		if not target then
-			zombieData.humanoid:MoveTo(rootPart.Position)
-			return
-		end
-
-		zombieData.targetPlayer = target
-		local targetCharacter = target.Character
-		if not targetCharacter then
-			return
-		end
-
-		local targetRoot = targetCharacter:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if not targetRoot then
-			return
-		end
-
-		local distanceToTarget = (targetRoot.Position - rootPart.Position).Magnitude
-
-		-- close enough: skip pathfinding, chase directly
-		if distanceToTarget < DIRECT_CHASE_DISTANCE then
-			zombieData.humanoid:MoveTo(targetRoot.Position)
-			waypointIndex = 1
-			currentWaypoints = {}
-			return
-		end
-
-		-- stuck detection: if barely moved in 3 seconds, force recompute
-		local currentTime = tick()
-		if currentTime - lastStuckCheck > STUCK_CHECK_INTERVAL then
-			local movedDist = (rootPart.Position - lastPosition).Magnitude
-			if movedDist < STUCK_DISTANCE_THRESHOLD then
-				-- stuck, force new path
-				lastPathTime = 0
-				waypointIndex = 1
-				currentWaypoints = {}
-			end
-			lastPosition = rootPart.Position
-			lastStuckCheck = currentTime
-		end
-
-		-- recompute path periodically
-		if currentTime - lastPathTime > PATH_RECOMPUTE_INTERVAL then
-			lastPathTime = currentTime
-			local waypoints = ComputePath(rootPart.Position, targetRoot.Position)
-			if waypoints then
-				currentWaypoints = waypoints
-				waypointIndex = 2 -- skip first waypoint (current position)
-			end
-		end
-
-		-- follow waypoints
-		if waypointIndex <= #currentWaypoints then
-			local waypoint = currentWaypoints[waypointIndex]
-			zombieData.humanoid:MoveTo(waypoint.Position)
-
-			-- check if reached current waypoint
-			local distToWaypoint = (waypoint.Position - rootPart.Position).Magnitude
-			if distToWaypoint < 4 then
-				waypointIndex += 1
-			end
-
-			-- handle jump waypoints
-			if waypoint.Action == Enum.PathWaypointAction.Jump then
-				zombieData.humanoid.Jump = true
-			end
-		else
-			-- no valid path, fall back to direct chase
-			zombieData.humanoid:MoveTo(targetRoot.Position)
-		end
-	end)
-
-	table.insert(zombieData.connections, aiConnection)
+	-- ensure the single heartbeat is running
+	EnsureHeartbeat()
 end
 
---------------------------------------------------
--- Cleanup
---------------------------------------------------
-
--- stops all AI behavior for a zombie
+-- removes a zombie from the AI loop and cleans up connections
 function ZombieAI.StopAI(zombieData: ZombieData)
 	zombieData.aiState = "dying"
 
+	-- swap-and-pop removal from registry (O(1))
+	local idx = zombieData._registryIndex
+	if idx and idx <= registryCount then
+		local lastEntry = registry[registryCount]
+		registry[idx] = lastEntry
+		lastEntry._registryIndex = idx
+		registry[registryCount] = nil
+		registryCount -= 1
+	end
+	zombieData._registryIndex = nil
+
+	-- disconnect all stored connections (touch damage, etc.)
 	for _, connection in zombieData.connections do
 		connection:Disconnect()
 	end
 	zombieData.connections = {}
+
+	-- stop heartbeat if no zombies remain
+	if registryCount == 0 and heartbeatConnection then
+		heartbeatConnection:Disconnect()
+		heartbeatConnection = nil
+	end
 end
 
 return ZombieAI
