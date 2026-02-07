@@ -34,7 +34,7 @@ export type ZombieType = "Normal" | "Fast" | "Tank" | "Exploder" | "Boss"
 -- Zombie Type Definitions
 --------------------------------------------------
 
-ZombieConfig.Zombies: { [string]: ZombieStats } = {
+ZombieConfig.Zombies = {
 	["Normal"] = {
 		Name = "Zombie",
 		Health = 100,
@@ -113,7 +113,7 @@ ZombieConfig.Zombies: { [string]: ZombieStats } = {
 -- Accessories (Roblox catalog asset IDs)
 --------------------------------------------------
 
-ZombieConfig.Accessories: { [string]: { { assetId: number } } } = {
+ZombieConfig.Accessories = {
 	["Normal"] = {
 		{ assetId = 48474313 }, -- cap
 	},
@@ -134,7 +134,7 @@ ZombieConfig.Accessories: { [string]: { { assetId: number } } } = {
 --------------------------------------------------
 
 -- which round each zombie type first appears
-ZombieConfig.TypeUnlockRounds: { [string]: number } = {
+ZombieConfig.TypeUnlockRounds = {
 	["Normal"] = 1,
 	["Fast"] = 3,
 	["Exploder"] = 5,
