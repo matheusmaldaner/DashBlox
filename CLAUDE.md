@@ -2,480 +2,281 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Git Conventions
+## Project Overview
 
-### Commits
-- Do NOT include `Co-Authored-By: Claude` or any co-author attribution
-- All commits must be authored by `@matheusmaldaner`
-- Keep messages simple, no colons, no prefixes like `fix:` or `feat:`
-- Examples:
-  - `add localStorage support for info persistence on page refresh`
-  - `add a sidebar to display overshoot logs`
+**Zombie Survival** is a wave-based zombie shooter Roblox game where players:
+1. Spawn into an arena/map with a starter weapon
+2. Fight waves of zombies that get progressively harder
+3. Earn coins from killing zombies (more coins for tougher zombies)
+4. Spend coins in the shop to buy better guns, ammo, perks, and barricades
+5. Survive as long as possible, with rebirth/prestige for permanent boosts
 
-### Branches
-- Use hyphen-separated names: `add-user-authentication`, `fix-login-bug`
-- Do NOT use prefixes like `feature/`, `bugfix/`, `hotfix/`
+The game is **strictly server-authoritative** for all logic (damage, health, inventory, economy, wave management). Clients handle input, aiming, and visuals.
 
-### Pull Requests
-- Always create as draft
-- Do NOT auto-request reviewers
-- Check for any open issues in the project before starting work
-- All PRs must be authored by `@matheusmaldaner`, not Claude
-- Use regular merge commits (not squash or rebase)
-- Fix merge conflicts iteratively
+NO FILE SHOULD BE BIGGER THAN 500 LINES, MOVE TO DIFFERENT FUNCTION IF HAVE TO AND CALL IT
 
-Format:
-- **Title:** `<description> #<PR-number>`
-- **Body:** List files changed with descriptions, reference related PRs when relevant
+## Development Commands
 
-Examples:
-```
-Title: establish docker entrypoint + novnc + cdp ports #1
-Body:
-docker-compose.yaml, Dockerfile and start-browser.sh created to establish connection with ports for VNC + CDP (currently unused)
-```
-
-```
-Title: basic frontend implementation #2
-Body:
-added simple README.md
-minor path fixes
-add .css, .html, .js for the landing page
-integrate with ports predefined in PR establish docker entrypoint + novnc + cdp ports #1
-```
-
-```
-Title: sidebar and storage integration #4
-Body:
-sidebar.css, sidebar.js, index.html: adds a sidebar to the frontend to showcase overshoot logs
-storage.js: add localStorage() support to persist data upon page refresh
-overshoot.js: integrates with @aamoghS's previous PR global array #3
-```
-
-## Repository Setup
-
-When starting a new project:
-1. Create a private GitHub repository (ensure it stays private)
-2. Set up CI/CD workflows for testing and linting
-3. Configure `.gitignore` to exclude `.env` but include `.env.example`
-4. Establish test infrastructure early and expand coverage as the project grows
-
-## Code Style
-
-### Comments
-- Use lowercase with no trailing period: `// iterates through file`
-- NOT capitalized: `// Iterate through file`
-
-### General Principles
-- Prefer simpler code that is easier to understand
-- Keep the codebase clean and organized
-- No emojis anywhere in code, comments, documentation, or commits
-- No default language or framework unless specified by the user
-
-### UI Design
-- Minimalistic and clean design (Apple liquid glass aesthetic)
-- Reference design system: `projects/NexHacks/frontend/css/styles.css`
-- Dark/light theme support with CSS variables
-- Smooth transitions and subtle animations
-- Glassmorphism with backdrop blur effects
-
-## Documentation
-
-- README.md should be brief and to the point
-- No tables in documentation
-- No emojis
-- Do NOT create additional .md files
-- Only modify PLAN.md and PROGRESS.md for project tracking
-
-## Environment
-
-- `.env` - ignored, never committed
-- `.env.example` - committed, contains placeholder values for required variables
-
-## Testing and Quality
-
-- Always write tests for new code
-- Establish linting workflows at the beginning of the project
-- Increment test coverage as the project grows
-- Cover all edge cases
-- Ensure tests and linting pass before committing
-
-## Workflow
-
-### Decision Making
-- Present numbered options for the user to choose from at decision points
-- Do not proceed with ambiguous requests without clarification
-- Summarize terminal output rather than showing full logs
-
-### Planning
-- Start with planning before execution to avoid downstream issues
-- Use PLAN.md to document what will be built
-- Use PROGRESS.md to track what has been completed
-
-### Verification
-- Always verify work through tests, linting, or other domain-specific methods
-- Run the test suite before considering a task complete
-
-## PLAN.md Format
-
-```markdown
-# Project Name
-
-**Project**: Brief description
-**Duration**: Timeline
-**Team Size**: N members
-
-> **Current Status**: See [PROGRESS.md](./PROGRESS.md) for live tracking.
-
----
-
-# Project Overview
-
-## The Problem
-1. Problem statement 1
-2. Problem statement 2
-
-## The Solution
-Description of what the project does.
-
----
-
-# Core Features
-
-## 1. Feature Name
-Description and implementation details.
-
-## 2. Feature Name
-Description and implementation details.
-
----
-
-# Technical Architecture
-
-(ASCII diagram of system components and data flow)
-
----
-
-# Implementation Phases
-
-## Phase 0: Setup
-- [ ] Task 1
-- [ ] Task 2
-
-## Phase 1: Core Functionality
-- [ ] Task 1
-- [ ] Task 2
-
-## Phase N: Polish
-- [ ] Task 1
-- [ ] Task 2
-
----
-
-# File Structure
-
-(Tree view of project structure)
-
----
-
-# Risk Analysis
-
-## Critical Risks
-- Risk 1: Description + Mitigation
-- Risk 2: Description + Mitigation
-
----
-
-# Development Guidelines
-
-(Project-specific coding conventions)
-
----
-
-# References
-
-- Link 1
-- Link 2
-```
-
-## PROGRESS.md Format
-
-```markdown
-# Project Name - Progress
-
-> **Living Memory Document**: Updated at every development step.
-
----
-
-## Current Status
-
-- **Project**: Name
-- **Phase**: Current phase
-- **Current Task**: What's being worked on
-- **Last Updated**: Timestamp
-- **Tests Passing**: Yes/No
-
----
-
-## Service Status
-
-- Service 1: Port X - Status
-- Service 2: Port Y - Status
-
----
-
-## Phase Checklist
-
-### Phase 0: Setup
-- [x] Completed task
-- [ ] Pending task
-
-### Phase 1: Core
-- [ ] Task 1
-- [ ] Task 2
-
----
-
-## Completed Tasks
-
-- Task 1 - Time - Notes
-- Task 2 - Time - Notes
-
----
-
-## Decisions Log
-
-- Decision 1 - Rationale - Time
-- Decision 2 - Rationale - Time
-
----
-
-## Risk Register
-
-- Risk 1 - Severity - Mitigation - Status
-- Risk 2 - Severity - Mitigation - Status
-
----
-
-## Session Notes
-
-### Session: Date
-**Completed**: List of completed items
-**Current State**: Description
-**Next Steps**: What to do next
-
----
-
-## Quick Reference
-
-### Commands
-(Common commands for the project)
-
-### Important Links
-- Link 1
-- Link 2
-```
-
-## Projects
-
-When starting a session in the projects root directory (/home/matheus/projects), automatically:
-1. Explore all subdirectories to identify projects
-2. For each project, note: Purpose (one sentence), Main language/framework, Reusable patterns
-3. Update this section with findings
-
-### Current Projects Summary
-
-**Hackathon & Competition Projects**
-- **NexHacks** - AI learning companion that observes study habits and generates quizzes (Python/FastAPI + JS)
-- **PlatosCave** - UF AI Days winner: Human-centered research validation with knowledge graphs (Python/Gatsby/Docker)
-- **ArtCompetitionUF** - AI art generation using CUDA and Replicate (Python/AI Models)
-- **Roblox** - Hackathon workspace with planning/progress templates (Markdown)
-
-**Research & Academic**
-- **AppliedMachineLearning** - UF ML course materials with pipeline templates (Python/Jupyter)
-- **Thesis** - Undergrad thesis tools: DiffLogic visualizer, EcoLogic, SaliencySlider (Python/Research)
-- **WoodardAmazon** - Amazon internship: DeepUnrollNet, rolling shutter correction (Python/Deep Learning)
-- **CompressionTokens** - Testing 200+ token compression algorithms for LLMs (Python/Research)
-- **SalgadoAISystems** - SentinelBench for AI safety evaluation (Python/TypeScript)
-- **VisualizerDemos** - ML visualization demos: CNN/transformer explainers (Python/Web)
-
-**Web Development**
-- **PersonalWebsite** - Portfolio with GitHub Pages and video generation (JavaScript/Jekyll)
-- **DSIWebsite** - UF Data Science & Informatics website (Node.js)
-- **magentic-ui** - AI-assisted UI generation framework (Python/React/Gatsby)
-- **MagenticUI-BlogpostReady** - Blog-ready Magentic-UI version (JavaScript/React/Gatsby)
-- **GasTown** - Gatsby web application (JavaScript/Gatsby)
-
-**Tools & Utilities**
-- **PaperParser** - Academic paper analysis with web scraping (Python/React)
-- **AnkiGarmin** - Anki flashcards for Garmin smartwatch (MonkeyC/Garmin Connect IQ)
-- **CR2toPNG** - Canon CR2 to PNG converter (Shell Script)
-- **CalendarAAIG** - AAIG calendar event scraper (Python)
-- **llmapi** - LLM integration API with SentinelSearcher (Python/API)
-
-**AI & Machine Learning**
-- **agent-sandbox** - Multi-agent LLM game world with visual perception (Python/TypeScript)
-- **FinsOliviaRL** - RL performance analysis for finance (Python/RL)
-- **CarnegieMellon** - WeAudit projects for AI content auditing (Python/Flask)
-
-**Mobile & Security**
-- **SurvivorPhone** - Android APK analysis and mobile security (Mobile Security)
-
-**Practice & Learning**
-- **leetcode** - Algorithm practice and interview prep (Python)
-- **test** - Applied ML project materials (Python/Testing)
-
-### Reusable Patterns & Components
-
-**UI/Design System**
-- Liquid glass aesthetic CSS (NexHacks: `frontend/css/styles.css`)
-- Dark/light theme variables with glassmorphism effects
-- Gatsby + React templates for rapid prototyping
-
-**Backend Architecture**
-- FastAPI + WebSocket patterns for real-time features (NexHacks)
-- Flask blueprints for modular API design (CarnegieMellon)
-- Docker compose setups for multi-service apps (PlatosCave, NexHacks)
-
-**AI/ML Pipelines**
-- Research paper validation workflows (PlatosCave)
-- Token compression testing framework (CompressionTokens)
-- Visualization components for ML explainability (VisualizerDemos)
-
-**Development Workflows**
-- Hackathon planning templates: PLAN.md, PROGRESS.md (Roblox)
-- Git conventions: simple commit messages, no prefixes
-- Testing infrastructure patterns from Applied ML course
-
-## Notifications
-
-To receive desktop notifications when Claude needs input, add this to `~/.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "Notification": [
-      {
-        "matcher": "idle_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "notify-send 'Claude Code' 'Awaiting your input' -u critical"
-          }
-        ]
-      },
-      {
-        "matcher": "permission_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "notify-send 'Claude Code' 'Permission required' -u critical"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-Notification types:
-- `idle_prompt` - Claude is waiting for user input
-- `permission_prompt` - Claude needs permission to run something
-
-## Build Commands
-
+### Build & Sync
 ```bash
-# rojo (roblox game sync)
-rojo serve                    # start rojo dev server (connect from roblox studio)
-rojo build -o game.rbxl       # build place file
-
-# dashboard (cd dashboard/ first)
-cd dashboard
-npm install                   # install dependencies
-npm run dev                   # start dev server (port 3000, auto-reload)
-npm start                     # start production server
-npm test                      # run tests
-npm run lint                  # lint code
-npm run format                # format code
+rojo build default.project.json -o build.rbxl  # Build place file
+rojo serve default.project.json                # Live sync to Studio
 ```
+
+### Linting
+```bash
+selene src/  # Lint Luau code (uses selene.toml config)
+```
+
+### Tools
+Managed via Aftman (see `aftman.toml`):
+- Rojo 7.6.1 for project sync
 
 ## Architecture
 
-### Repo Layout
-- `src/` - roblox game source (luau, synced via rojo)
-- `dashboard/` - web dashboard (node.js express + vanilla frontend)
-- `default.project.json` - rojo project config
-- `aftman.toml` - toolchain manager (rojo 7.6.1)
+### Directory Structure
+```
+src/
+├── ReplicatedStorage/          # Shared modules & remotes
+│   ├── Modules/               # Shared logic
+│   │   ├── GunConfig.lua      # Weapon stats, fire rates, damage, ammo
+│   │   ├── ZombieConfig.lua   # Zombie types, health, speed, rewards
+│   │   ├── WaveConfig.lua     # Wave definitions (zombie counts, types per wave)
+│   │   ├── ShopConfig.lua     # Shop items, prices, unlock requirements
+│   │   ├── GridSnap.lua       # Grid placement utilities (barricades)
+│   │   ├── CameraFollow.lua   # Camera system
+│   │   ├── NumberFormatter.lua # Number display utilities
+│   │   └── TutorialArrow.lua  # Tutorial system
+│   ├── RemoteService.lua      # Centralized remote registry
+│   ├── ProfileStore.lua       # Data persistence module (external)
+│   ├── UIManager.lua          # UI utilities
+│   └── ZoneBuilder.lua        # Zone construction
+│
+├── ServerScriptService/        # Server-only code
+│   └── Services/              # Server services (*.server.lua or .lua)
+│       ├── DataService.lua           # ProfileStore integration
+│       ├── PlayerData.lua            # Player state management
+│       ├── WaveService.lua           # Wave spawning & progression
+│       ├── ZombieService.lua         # Zombie AI, pathfinding, health
+│       ├── GunService.lua            # Weapon handling, hit validation, ammo
+│       ├── ShopService.lua           # In-game shop (buy guns, perks, ammo)
+│       ├── DamageService.lua         # Server-side damage calculation
+│       ├── BarricadeService.lua      # Barricade placement & health
+│       ├── PlotService.lua           # Plot/lobby assignment
+│       ├── GamePassService.lua       # GamePass handling
+│       ├── RebirthService.lua        # Rebirth/prestige system
+│       ├── PlaytimeRewardsService.server.lua  # Playtime rewards
+│       ├── DailyTasksService.lua     # Daily task system
+│       ├── LoginBonusService.server.lua      # Login streak rewards
+│       ├── AchievementService.lua    # Achievement tracking
+│       ├── LeaderboardService.lua    # Leaderboard system
+│       ├── CodeService.server.lua    # Promo code redemption
+│       ├── VerifyService.server.lua  # Social verification (X/Twitter)
+│       ├── GroupRewardService.server.lua  # Group membership rewards
+│       ├── FriendBoostService.lua    # Friend count boosts
+│       ├── GiftingService.lua        # Gift system
+│       ├── DevProductService.lua     # Robux purchase handling
+│       └── AnalyticsService.lua      # Funnel tracking
+│
+└── StarterPlayer/StarterPlayerScripts/  # Client-only code
+    ├── Combat/                # Combat-related client scripts
+    │   ├── GunController.client.lua       # Shooting, aiming, reloading visuals
+    │   ├── CrosshairController.client.lua # Crosshair/reticle rendering
+    │   └── HitMarkerController.client.lua # Hit feedback effects
+    ├── Zombies/               # Zombie client visuals
+    │   └── ZombieEffects.client.lua       # Death anims, damage numbers
+    └── UI/                    # UI controllers
+        ├── ShopController.client.lua          # Weapon/perk shop UI
+        ├── WaveHudController.client.lua       # Wave counter, zombie count
+        ├── AmmoHudController.client.lua       # Ammo display
+        ├── HealthHudController.client.lua     # Player health bar
+        ├── GamePassShopController.client.lua
+        ├── RebirthController.client.lua
+        ├── PlaytimeRewardsController.client.lua
+        ├── DailyTasksController.client.lua
+        ├── LoginBonusController.client.lua
+        ├── AchievementController.client.lua
+        ├── LeaderboardController.client.lua
+        ├── SettingsController.client.lua
+        ├── NotificationController.client.lua
+        ├── CoinsDisplayController.client.lua
+        ├── CurrencyDisplayController.client.lua
+        └── PlotController.client.lua
+```
 
-### Rojo (Game)
-- Rojo 7.6.1 via aftman for studio sync
-- `src/server/` -> ServerScriptService
-- `src/client/` -> StarterPlayer.StarterPlayerScripts
-- `src/shared/` -> ReplicatedStorage
-- Luau files with `.server.luau`, `.client.luau`, `.luau` extensions
+### Key Systems
 
-### Dashboard (Web App)
-**Stack**: Vanilla HTML/CSS/JS frontend + Node.js Express backend
-**Database**: MongoDB Atlas (free tier M0, upgrade to M10 for production)
-**Hosting**: Vultr Cloud Compute (vc2-2c-4gb)
+#### 1. Data Persistence (ProfileStore)
+- **DataService.lua**: ProfileStore wrapper, session locking, auto-save
+- **PlayerData.lua**: Player state API (coins, gems, XP, playtime, rebirth)
+- **Profile Template**:
+  - `Coins`, `Gems`, `XP`: Currency/progression
+  - `RebirthLevel`: Prestige level
+  - `Playtime`: Total play time
+  - `OwnedGuns`: Table of unlocked weapons
+  - `OwnedPerks`: Table of unlocked perks
+  - `HighestWave`: Best wave reached (for leaderboards)
+  - `TotalKills`: Lifetime zombie kills
+  - `EquippedLoadout`: Currently selected weapons
+- **CRITICAL**: Install ProfileStore at `ReplicatedStorage/ProfileStore`
 
-#### Frontend
-- Vanilla HTML/CSS/JS (no framework, no build step)
-- NexHacks liquid glass design system (dark/light theme, glassmorphism)
-- three.js for 3D model preview (loaded lazily on Models tab)
-- SortableJS for Trello board drag-and-drop
-- marked.js + highlight.js for markdown rendering
+#### 2. Networking (RemoteService)
+- **RemoteService.lua**: Centralized remote registry
+- All remotes declared in `remoteRegistry` with types (RemoteEvent/RemoteFunction)
+- Built-in rate limiting via `CreateRateLimiter(cooldown)`
+- **Key Remote Categories**:
+  - Player Data: `GetPlayerData`, `SetCameraMode`, `SetUserSetting`
+  - Combat: `FireGun`, `ReloadGun`, `HitRegistration`, `ZombieDied`, `PlayerDamaged`
+  - Waves: `WaveStarted`, `WaveCompleted`, `WaveCountdown`
+  - Shop: `BuyGun`, `BuyAmmo`, `BuyPerk`, `BuyBarricade`, `GetShopData`
+  - Loadout: `EquipGun`, `SwapWeapon`, `GetOwnedGuns`
+  - Rebirth: `OpenRebirthUI`, `PerformRebirth`, `RebirthCompleted`
+  - GamePass: `GetGamePassStatus`, `PromptGamePassPurchase`, `GamePassStatusChanged`
+  - Rewards: `ClaimPlaytimeReward`, `ClaimDailyTaskReward`, `ClaimLoginBonus`
+  - Social: `ClaimGroupReward`, `ClaimXVerify`, `RedeemCode`
 
-#### Backend (Node.js Express)
-- Static file serving for frontend
-- API proxy routes to external services (never expose API keys to client)
-- Route structure: /api/audio/*, /api/models/*, /api/docs/*, /api/board/*, /api/solana/*
-- Service layer: each external API has a dedicated service module
-- Middleware: CORS, rate limiting, error handling
+#### 3. Combat System
+- **GunService** (server): Validates shots, calculates damage, manages ammo server-side
+- **DamageService** (server): Applies damage to zombies, handles kill rewards
+- **GunController** (client): Handles input (click to shoot, R to reload), plays animations, sends fire events
+- **Hit validation**: Client sends ray origin + direction, server re-casts to verify hits
+- **Damage falloff**: Optional distance-based damage reduction per weapon
 
-### External APIs
-- **Gemini (via OpenRouter)**: primary LLM for prompt enhancement, code generation
-- **OpenRouter**: LLM routing with fallback (Gemini -> Claude -> Llama)
-- **ElevenLabs**: SFX generation, TTS, voice cloning
-- **Meshy/Tripo/Rodin**: 3D model generation (multi-provider toggle)
-- **Roblox Open Cloud**: asset upload to Roblox
-- **Solana/Metaplex**: NFT minting, asset marketplace (optional)
+#### 4. Zombie System
+- **ZombieService** (server): Spawns zombies, runs AI, manages zombie health pools
+- **ZombieConfig** (shared): Defines zombie types with stats (health, speed, damage, coin reward)
+- **Zombie Types**: Normal, Fast, Tank, Exploder, Boss (per-wave scaling)
+- **AI**: Pathfinding toward nearest player, attack on proximity
+- **Pooling**: Reuse zombie models to reduce instance creation overhead
 
-### Database (MongoDB Atlas)
-- Collections: projects, assets_3d, assets_audio, board_columns, board_cards
-- Change Streams for real-time Trello board sync
-- Metadata only (asset files stored on disk / Vultr Block Storage)
+#### 5. Wave System
+- **WaveService** (server): Controls wave progression, rest periods, difficulty scaling
+- **Wave flow**: Rest period (buy phase) → Wave countdown → Zombies spawn → Kill all → Reward → Next wave
+- **Scaling**: Each wave increases zombie count, health, speed; introduces new types at milestones
+- **Between-wave shop**: Players can buy/upgrade during rest periods
 
-### Dashboard Tabs
-1. **Models** - AI 3D model generation with multi-provider toggle
-2. **Audio** - ElevenLabs SFX + voice generation (ported from fortnite-collab)
-3. **Docs** - CLAUDE.md / PLAN.md / PROGRESS.md viewer/editor
-4. **Board** - Kanban task manager with drag-and-drop
+#### 6. Shop & Economy
+- **ShopService** (server): Handles purchases, validates player has enough coins
+- **ShopConfig** (shared): Defines all purchasable items and prices
+- **Categories**: Guns, Ammo Refills, Perks (speed boost, double damage, etc.), Barricades
+- **Guns unlock permanently** (persist across sessions), ammo/perks are per-round
 
-### Hackathon Framing
-- **Pitch**: "An AI-powered Roblox game development dashboard that we used to build a Zombies game in record time"
-- Dashboard IS the hackathon project
-- Zombies game (fortnite-collab/Zombies) is PROOF it works
-- Sponsors: Gemini (AI backbone), ElevenLabs (audio), MongoDB (data), Vultr (hosting), Solana (optional economy)
+#### 7. Monetization Framework
+- **GamePassService**: GamePass detection and effects (2x coins, starter pack, exclusive guns)
+- **DevProductService**: Robux purchase handling (coin bundles, revives)
+- **GiftingService**: Gift system for gamepasses/crates
+- **RotatingCrateService**: Rotating loot crate system (weapon skins, effects)
+- **GemCrateService**: Gem-purchased crates
 
-## Environment Variables
+#### 8. Progression Framework
+- **RebirthService**: Prestige/rebirth system with permanent boost multipliers (coin multiplier, damage boost, starting wave skip)
+- **PlaytimeRewardsService**: Tiered rewards for playtime
+- **DailyTasksService**: Daily task completion for rewards (kill X zombies, reach wave Y, buy a gun)
+- **LoginBonusService**: Streak-based daily login rewards
+- **AchievementService**: Achievement milestones (total kills, waves survived, guns owned)
 
-Required in `dashboard/.env` (see `dashboard/.env.example` for placeholders):
-- `PORT` - server port (default 3000)
-- `OPENROUTER_API_KEY` - OpenRouter API key (routes to Gemini, Claude, Llama)
-- `ELEVENLABS_API_KEY` - ElevenLabs API key
-- `MESHY_API_KEY` - Meshy 3D generation API key
-- `TRIPO_API_KEY` - Tripo3D API key
-- `RODIN_API_KEY` - Rodin/Hyper3D API key
-- `ROBLOX_API_KEY` - Roblox Open Cloud API key
-- `MONGODB_URI` - MongoDB Atlas connection string
-- `SOLANA_RPC_URL` - Solana RPC endpoint (devnet for dev, mainnet for prod)
-- `SOLANA_PRIVATE_KEY` - Solana wallet private key (devnet only, never mainnet)
-- `PROJECT_PATHS` - comma-separated paths to Roblox project directories for Docs tab
+## Core Engineering Principles
 
-## Related Projects
+### Server Authority
+- **All** gameplay logic (damage, health, inventory, economy, waves) runs server-side
+- Clients are **display-only**: render visuals, handle input, show UI
+- Never trust client values (damage numbers, kill counts, currency, positions)
+- **Hit validation**: Server re-verifies all shots; client only sends intent
 
-- **fortnite-collab**: `/home/matheus/projects/Roblox/fortnite-collab/` - main Roblox game with SFX generator tool to port
-- **Zombies**: `/home/matheus/projects/Roblox/Zombies/` - wave-based survival game (proof-of-concept for dashboard)
-- **NexHacks**: `/home/matheus/projects/NexHacks/` - design system reference (CSS in `frontend/css/`)
-- **FortBox**: `/home/matheus/projects/Roblox/FortBox/` - hackathon variant
+### Networking Discipline
+- All remotes in `RemoteService` with documented payloads
+- Input validation and rate limiting on server
+- Per-player remotes where appropriate
+- Fire rate enforcement server-side (prevent rapid-fire exploits)
+
+### Performance
+- Avoid per-frame allocations (reuse tables, CFrames)
+- Pool zombie models and bullet effects
+- Use CollectionService tags over polling/loops
+- Limit active zombie count; queue spawns if needed
+- LOD for distant zombies (reduce animation complexity)
+
+### Data Integrity
+- All currency/progression managed through PlayerData API
+- Data changes go through DataService for persistence
+- Gun ownership and loadout validated server-side
+
+### Lifecycle & Cleanup
+- Every connection must be disconnectable
+- Services expose Destroy methods
+- Clean up on player leave, zombie death, round end
+- Despawn zombie models back to pool on death
+
+### Security
+- Validate all client inputs against server state
+- Rate limit remotes where needed (especially FireGun)
+- Sanitize user input (text, numbers, vectors)
+- Anti-cheat: server tracks fire rate, ammo count, and position reasonability
+- Reject impossible shots (through walls, beyond weapon range)
+
+## Game Flow
+
+1. **Lobby/Spawn**: Player joins → spawns in lobby → matchmaking or solo start
+2. **Wave Start**: Countdown timer → zombies begin spawning from spawn points
+3. **Combat Phase**: Players shoot zombies → earn coins per kill → survive the wave
+4. **Wave Clear**: All zombies dead → rest period begins → shop opens
+5. **Shop Phase**: Players spend coins on guns, ammo, perks, barricades
+6. **Next Wave**: Harder wave begins with more/tougher zombies
+7. **Death**: Player dies → option to revive (Robux/gem) or spectate
+8. **Game Over**: All players dead → results screen → coins earned summary
+9. **Progression**: Permanent unlocks persist, rebirth for multiplier boosts
+
+## Important Files
+
+- **RemoteService.lua**: Add new remotes here
+- **PlayerData.lua**: Player state API (coins, gems, rebirth, guns, kills)
+- **DataService.lua**: Data persistence layer
+- **GunConfig.lua**: All weapon definitions (damage, fire rate, ammo, cost)
+- **ZombieConfig.lua**: All zombie type definitions (health, speed, reward)
+- **WaveConfig.lua**: Wave progression definitions
+- **default.project.json**: Rojo project structure
+
+## Development Guidelines
+
+### When Adding Features
+1. Check if it's server logic → add to Services/
+2. Check if it's client display → add to StarterPlayerScripts/
+3. Check if it's shared → add to ReplicatedStorage/Modules/
+4. Always add remotes to RemoteService registry first
+
+### When Adding Weapons
+1. Add weapon stats to `GunConfig.lua` (damage, fire rate, mag size, reload time, cost)
+2. Add purchase logic in `ShopService.lua`
+3. Add server-side fire handling in `GunService.lua`
+4. Add client visuals/animations in `GunController.client.lua`
+5. Add to shop UI in `ShopController.client.lua`
+
+### When Adding Zombie Types
+1. Add zombie stats to `ZombieConfig.lua` (health, speed, damage, coin reward)
+2. Add spawning logic in `ZombieService.lua`
+3. Add to wave definitions in `WaveConfig.lua`
+4. Add client-side effects in `ZombieEffects.client.lua`
+
+### When Adding Remotes
+1. Add to `remoteRegistry` in RemoteService.lua
+2. Document payload shape in comments
+3. Add rate limiting if user-triggered
+4. Validate inputs server-side
+
+### When Working with Data
+- Never modify profile data directly
+- Use PlayerData API methods (AddCoins, AddGems, SpendCoins, etc.)
+- All data changes must go through DataService for persistence
+
+## TODO: Game-Specific Features to Implement
+
+1. **Gun Registry**: Define all weapon types with full stats in GunConfig
+2. **Zombie Registry**: Define all zombie types with stats in ZombieConfig
+3. **Wave System**: Wave progression, scaling, spawn point management
+4. **Combat System**: Shooting, hit detection, damage, ammo management
+5. **Zombie AI**: Pathfinding, attacking, special abilities (explode, charge)
+6. **Shop System**: Between-wave shop for guns, ammo, perks
+7. **Death/Revive**: Player death handling, revive mechanic
+8. **Barricade System**: Placeable defenses that zombies must break through
+9. **Perk System**: Temporary per-round buffs (speed, damage, health regen)
+10. **Weapon Skins**: Cosmetic system for gun skins via crates
