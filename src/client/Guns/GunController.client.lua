@@ -2,19 +2,16 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GunConfig = require(ReplicatedStorage.Modules.Guns.GunConfig)
 local GunUtility = require(ReplicatedStorage.Modules.Guns.GunUtility)
-local ADSState = require(ReplicatedStorage.Modules.Guns.ADSState)
 local CrosshairController = require(script.Parent.CrosshairController)
 local RemoteService = require(ReplicatedStorage.Modules.RemoteService)
 local GameModeService = require(ReplicatedStorage.Modules.GameModeService)
 local CrouchController = require(script.Parent.Parent.Movement.CrouchController)
 local SprintController = require(script.Parent.Parent.Movement.SprintController)
 local AudioService = require(ReplicatedStorage.Modules.Audio.AudioService)
-local Keybinds = require(ReplicatedStorage.Modules.Keybinds)
 local Settings = require(ReplicatedStorage.Modules.Settings)
 local MatchStateClient = require(ReplicatedStorage.Modules.MatchStateClient)
 local InputManager = require(ReplicatedStorage.Modules.InputManager)
@@ -23,7 +20,6 @@ local AimAssist = require(ReplicatedStorage.Modules.AimAssist)
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera :: Camera
 
-local DEFAULT_FOV = 70
 local EQUIPPED_GUN_NAME = "EquippedGun"
 
 -- ammo ui bridge (created by HotbarUI if it exists)
@@ -182,73 +178,12 @@ local state = {
 	currentGun = nil :: string?,
 	ammo = 0,
 	isReloading = false,
-	isADS = false,
 	lastFireTime = 0,
 	weaponModel = nil :: Model?,
 	isFiring = false,
 	currentRecoil = 0, -- accumulated recoil spread from sustained fire
 }
 local isAlive = true
-
--- Sniper scope UI state
-local originalTransparencies: { [BasePart]: number } = {}
-
--- Get the sniper scope frame from FightGUI
-local function GetSniperScopeFrame(): Frame?
-	local playerGui = player:FindFirstChild("PlayerGui") :: PlayerGui?
-	if not playerGui then
-		return nil
-	end
-
-	local fightGui = playerGui:FindFirstChild("FightGUI") :: ScreenGui?
-	if not fightGui then
-		return nil
-	end
-
-	return fightGui:FindFirstChild("SniperScope") :: Frame?
-end
-
--- Show sniper scope overlay UI
-local function ShowSniperScopeUI()
-	local scopeFrame = GetSniperScopeFrame()
-	if scopeFrame then
-		scopeFrame.Visible = true
-	end
-end
-
--- Hide sniper scope overlay UI
-local function HideSniperScopeUI()
-	local scopeFrame = GetSniperScopeFrame()
-	if scopeFrame then
-		scopeFrame.Visible = false
-	end
-end
-
--- Set player character transparency
-local function SetCharacterTransparency(transparency: number)
-	local character = player.Character
-	if not character then
-		return
-	end
-
-	for _, part in character:GetDescendants() do
-		if part:IsA("BasePart") then
-			-- Store original transparency on first call
-			if transparency > 0 and originalTransparencies[part] == nil then
-				originalTransparencies[part] = part.LocalTransparencyModifier
-			end
-
-			-- Apply transparency (1 = invisible)
-			part.LocalTransparencyModifier = transparency
-
-			-- Restore original when transparency is 0
-			if transparency == 0 and originalTransparencies[part] ~= nil then
-				part.LocalTransparencyModifier = originalTransparencies[part]
-				originalTransparencies[part] = nil
-			end
-		end
-	end
-end
 
 -- Get the equipped gun model from the player's character
 local function GetEquippedGunModel(): Model?
@@ -265,24 +200,6 @@ local function GetEquippedGunModel(): Model?
 	return nil
 end
 
--- Set weapon model transparency
-local function SetWeaponTransparency(transparency: number)
-	local weaponModel = state.weaponModel
-	if not weaponModel then
-		weaponModel = GetEquippedGunModel()
-	end
-
-	if not weaponModel then
-		return
-	end
-
-	for _, part in weaponModel:GetDescendants() do
-		if part:IsA("BasePart") then
-			part.LocalTransparencyModifier = transparency
-		end
-	end
-end
-
 -- AnimationService (optional)
 local AnimationService = nil
 task.spawn(function()
@@ -290,7 +207,7 @@ task.spawn(function()
 	if animationFolder then
 		AnimationService = require(animationFolder:WaitForChild("AnimationService"))
 		if state.equipped then
-			AnimationService.SetActionState(if state.isADS then "ADS" else "HoldGun")
+			AnimationService.SetActionState("HoldGun")
 		end
 	end
 end)
@@ -313,7 +230,6 @@ local weaponAmmo: { [string]: number } = {}
 
 -- forward declarations
 local UpdateCrosshair: () -> ()
-local SwitchToSlot: (slotIndex: number) -> ()
 
 -- Get player's current movement speed
 local function GetPlayerSpeed(): number
@@ -830,7 +746,8 @@ local function EquipGun(gunName: string)
 		end)
 	end
 
-	-- Show crosshair
+	-- Hide mouse cursor and show crosshair
+	UserInputService.MouseIconEnabled = false
 	CrosshairController.Show()
 	UpdateCrosshair()
 
@@ -852,24 +769,7 @@ local function UnequipGun()
 		weaponAmmo[state.currentGun] = state.ammo
 	end
 
-	-- Check if sniper scoped before resetting state
-	local wasSniperScoped = state.isADS and state.currentGun == "Sniper"
-
 	state.weaponModel = nil
-
-	-- Reset ADS if active
-	if state.isADS then
-		state.isADS = false
-		ADSState.SetADS(false, nil, 1.0)
-		TweenService:Create(camera, TweenInfo.new(0.2), { FieldOfView = DEFAULT_FOV }):Play()
-
-		-- Clean up sniper scope if it was active
-		if wasSniperScoped then
-			HideSniperScopeUI()
-			SetCharacterTransparency(0)
-			SetWeaponTransparency(0)
-		end
-	end
 
 	-- Update state
 	state.equipped = false
@@ -881,7 +781,8 @@ local function UnequipGun()
 	-- Tell server we unequipped
 	UnequipGunRemote:FireServer()
 
-	-- Hide crosshair
+	-- Restore mouse cursor and hide crosshair
+	UserInputService.MouseIconEnabled = true
 	CrosshairController.Hide()
 
 	-- Notify AmmoUI
@@ -924,23 +825,6 @@ local function Reload()
 
 	state.isReloading = true
 	state.isFiring = false -- stop firing during reload
-
-	-- Exit ADS during reload
-	if state.isADS then
-		local wasSniper = state.currentGun == "Sniper"
-		state.isADS = false
-		ADSState.SetADS(false, nil, 1.0)
-		TweenService:Create(camera, TweenInfo.new(0.2), { FieldOfView = DEFAULT_FOV }):Play()
-		SetGunActionState("HoldGun")
-
-		-- Clean up sniper scope if it was active
-		if wasSniper then
-			HideSniperScopeUI()
-			SetCharacterTransparency(0)
-			SetWeaponTransparency(0)
-			CrosshairController.Show()
-		end
-	end
 
 	-- Play reload sound
 	AudioService.PlayWeaponReload(state.currentGun)
@@ -985,7 +869,7 @@ UpdateCrosshair = function()
 	local playerState: GunUtility.PlayerState = {
 		isMoving = GetPlayerSpeed() > 0.5,
 		moveSpeed = GetPlayerSpeed(),
-		isADS = state.isADS,
+		isADS = false,
 		isCrouching = CrouchController.IsCrouching(),
 		isSprinting = SprintController.IsSprinting(),
 	}
@@ -1049,7 +933,7 @@ local function Shoot()
 	local playerState: GunUtility.PlayerState = {
 		isMoving = GetPlayerSpeed() > 0.5,
 		moveSpeed = GetPlayerSpeed(),
-		isADS = state.isADS,
+		isADS = false,
 		isCrouching = CrouchController.IsCrouching(),
 		isSprinting = SprintController.IsSprinting(),
 	}
@@ -1150,79 +1034,6 @@ local function Shoot()
 	state.currentRecoil = math.min(state.currentRecoil + gunStats.RecoilPerShot, gunStats.MaxRecoilSpread)
 end
 
--- Enter ADS (Aim Down Sights)
-local function EnterADS()
-	if not canUseCombat() then
-		return
-	end
-	if not isAlive then
-		return
-	end
-	if not state.equipped or state.isADS or not state.currentGun then
-		return
-	end
-
-	local gunStats = GunConfig.Guns[state.currentGun]
-	if not gunStats then
-		return
-	end
-
-	-- Cancel sprint when entering ADS (Fortnite-style)
-	SprintController.CancelSprint()
-
-	state.isADS = true
-
-	-- Update shared ADS state for camera sensitivity
-	ADSState.SetADS(true, state.currentGun, gunStats.ADSSensitivityMultiplier)
-
-	local targetFOV = DEFAULT_FOV * gunStats.ADSFOVMultiplier
-	TweenService:Create(camera, TweenInfo.new(gunStats.ADSTransitionTime), { FieldOfView = targetFOV }):Play()
-
-	-- Sniper-specific: show scope overlay and hide player/weapon
-	if state.currentGun == "Sniper" then
-		ShowSniperScopeUI()
-		SetCharacterTransparency(1)
-		SetWeaponTransparency(1)
-		CrosshairController.ShowSniperDot() -- Show red dot when scoped
-	end
-
-	SetGunActionState("ADS")
-	UpdateCrosshair()
-end
-
--- Exit ADS
-local function ExitADS()
-	if not state.isADS or not state.currentGun then
-		return
-	end
-
-	local gunStats = GunConfig.Guns[state.currentGun]
-	if not gunStats then
-		return
-	end
-
-	-- Check if we were using sniper before changing state
-	local wasSniper = state.currentGun == "Sniper"
-
-	state.isADS = false
-
-	-- Update shared ADS state for camera sensitivity
-	ADSState.SetADS(false, nil, 1.0)
-
-	TweenService:Create(camera, TweenInfo.new(gunStats.ADSTransitionTime), { FieldOfView = DEFAULT_FOV }):Play()
-
-	-- Sniper-specific: hide scope overlay and restore player/weapon visibility
-	if wasSniper then
-		HideSniperScopeUI()
-		SetCharacterTransparency(0)
-		SetWeaponTransparency(0)
-		CrosshairController.HideSniperDot() -- Restore original crosshair
-		CrosshairController.Show() -- Show crosshair again
-	end
-
-	SetGunActionState("HoldGun")
-	UpdateCrosshair()
-end
 
 MatchStateClient.OnCombatChanged(function(enabled)
 	if not enabled and state.equipped then
@@ -1230,20 +1041,7 @@ MatchStateClient.OnCombatChanged(function(enabled)
 	end
 end)
 
--- Slot keybinds (dynamically read from Keybinds module)
-local weaponSlotActions = { "weapon1", "weapon2", "weapon3", "weapon4", "weapon5" }
-
-local function getSlotIndexForKey(keyCode: Enum.KeyCode): number?
-	for slotIndex, action in weaponSlotActions do
-		local boundKey = Keybinds.Get(action)
-		if boundKey and keyCode == boundKey then
-			return slotIndex
-		end
-	end
-	return nil
-end
-
--- Input handling
+-- Input handling (weapon slot selection is handled by Roblox's built-in tool system)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	-- Don't process any gun input while settings menu is open
 	if Settings.IsMenuOpen() then
@@ -1253,26 +1051,12 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		return
 	end
 
-	-- Slot keys - handle all slots uniformly (weapons, consumables, empty)
-	-- These keys now ALWAYS work and auto-switch to Gun mode (Fortnite-style)
-	if not gameProcessed then
-		local slotIndex = getSlotIndexForKey(input.KeyCode)
-		if slotIndex then
-			SwitchToSlot(slotIndex)
-		end
-	end
-
 	-- Left mouse button to shoot (allow even when camera is processing)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		if state.equipped and isAlive then
 			state.isFiring = true
 			Shoot()
 		end
-	end
-
-	-- Right mouse button to ADS (allow even when camera is processing)
-	if input.UserInputType == Enum.UserInputType.MouseButton2 then
-		EnterADS()
 	end
 
 	-- R key to reload
@@ -1289,10 +1073,6 @@ UserInputService.InputEnded:Connect(function(input, _gameProcessed)
 		state.isFiring = false
 	end
 
-	-- Exit ADS
-	if input.UserInputType == Enum.UserInputType.MouseButton2 then
-		ExitADS()
-	end
 end)
 
 -- Track delta time for recoil decay
@@ -1545,129 +1325,6 @@ end)
 -- Loadout System
 --------------------------------------------------
 
--- Helper to count weapons in loadout (sparse array safe)
-local function getWeaponCount(): number
-	local count = 0
-	for i = 1, 5 do
-		if loadout[i] then
-			count += 1
-		end
-	end
-	return count
-end
-
--- Helper to count occupied slots (weapons + consumables) for scroll navigation
-local function getOccupiedSlotCount(): number
-	local count = 0
-	for i = 1, 5 do
-		if occupiedSlots[i] then
-			count += 1
-		end
-	end
-	return count
-end
-
--- Helper to check if a slot has a weapon (kept for potential future use)
-local function _slotHasWeapon(slotIndex: number): boolean
-	return slotIndex >= 1 and slotIndex <= 5 and loadout[slotIndex] ~= nil
-end
-
--- Switch to a specific weapon slot
-function SwitchToSlot(slotIndex: number)
-	if not canUseCombat() then
-		return
-	end
-	if slotIndex < 1 or slotIndex > 5 then
-		return
-	end
-
-	-- Check if this slot has a weapon
-	local gunName = loadout[slotIndex]
-	if not gunName then
-		-- Slot is empty or has a consumable, just update current slot without equipping
-		currentSlot = slotIndex
-		if state.equipped then
-			UnequipGun()
-		end
-		notifyAmmoUI("SlotChanged", slotIndex + 1, loadout)
-		return
-	end
-
-	-- already on this slot with same weapon
-	if currentSlot == slotIndex and state.equipped then
-		return
-	end
-
-	-- unequip current weapon
-	if state.equipped then
-		UnequipGun()
-	end
-
-	-- equip weapon from slot
-	currentSlot = slotIndex
-	if GunConfig.Guns[gunName] then
-		AudioService.PlayWeaponSwitch(gunName)
-		EquipGun(gunName)
-
-		-- sync roblox hotbar by equipping the matching tool
-		local character = player.Character
-		local backpack = player:FindFirstChild("Backpack")
-		if character and backpack then
-			local humanoid = character:FindFirstChildOfClass("Humanoid")
-			if humanoid then
-				-- find the tool in backpack or character
-				for _, child in backpack:GetChildren() do
-					if child:IsA("Tool") and child:GetAttribute("GunName") == gunName then
-						humanoid:EquipTool(child)
-						break
-					end
-				end
-			end
-		end
-	end
-
-	notifyAmmoUI("SlotChanged", slotIndex + 1, loadout)
-end
-
--- Switch to next slot (skips empty slots, includes consumables)
-local function SwitchToNextWeapon()
-	if getOccupiedSlotCount() == 0 then
-		return
-	end
-
-	-- Find next occupied slot (weapon or consumable)
-	local nextSlot = currentSlot
-	for _ = 1, 5 do
-		nextSlot = nextSlot + 1
-		if nextSlot > 5 then
-			nextSlot = 1
-		end
-		if occupiedSlots[nextSlot] then
-			SwitchToSlot(nextSlot)
-			return
-		end
-	end
-end
-
--- Switch to previous slot (skips empty slots, includes consumables)
-local function SwitchToPreviousWeapon()
-	if getOccupiedSlotCount() == 0 then
-		return
-	end
-
-	-- Find previous occupied slot (weapon or consumable)
-	local prevSlot = currentSlot
-	for _ = 1, 5 do
-		prevSlot = prevSlot - 1
-		if prevSlot < 1 then
-			prevSlot = 5
-		end
-		if occupiedSlots[prevSlot] then
-			SwitchToSlot(prevSlot)
-			return
-		end
-	end
-end
 
 -- Handle receiving loadout from server
 -- NOTE: weapons array preserves slot positions (nil for empty/consumable slots)
@@ -1774,39 +1431,28 @@ InventoryChangedRemote.OnClientEvent:Connect(function(inventory)
 			AudioService.PlayWeaponSwitch(expectedGun)
 		end
 		EquipGun(expectedGun)
-	end
 
-	-- NOTE: Do NOT call notifyAmmoUI("SlotChanged") here to avoid feedback loop
-	-- HotbarUI already receives InventoryChanged and updates its own state
-end)
-
--- Scroll wheel to switch weapons
-UserInputService.InputChanged:Connect(function(input, gameProcessed)
-	if gameProcessed then
-		return
-	end
-	if not canUseCombat() then
-		return
-	end
-
-	if input.UserInputType == Enum.UserInputType.MouseWheel then
-		if GameModeService.IsGunMode() and getWeaponCount() > 1 then
-			if input.Position.Z > 0 then
-				SwitchToPreviousWeapon()
-			else
-				SwitchToNextWeapon()
+		-- Sync Roblox toolbar by equipping the matching tool
+		local character = player.Character
+		local backpackRef = player:FindFirstChild("Backpack")
+		if character and backpackRef then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				for _, child in backpackRef:GetChildren() do
+					if child:IsA("Tool") and child:GetAttribute("GunName") == expectedGun then
+						humanoid:EquipTool(child)
+						break
+					end
+				end
 			end
 		end
 	end
 end)
 
--- Set up sprint blocking callback (cannot sprint while ADS or firing)
+-- Scroll wheel weapon switching handled by Roblox's built-in tool system
+
+-- Set up sprint blocking callback (cannot sprint while firing)
 SprintController.SetCanSprintCallback(function(): boolean
-	-- Cannot sprint while ADS
-	if state.isADS then
-		return false
-	end
-	-- Cannot sprint while actively firing
 	if state.isFiring then
 		return false
 	end
@@ -1835,20 +1481,6 @@ InputManager.BindAction("Fire", function(_actionName, inputState, _inputObject)
 	return Enum.ContextActionResult.Sink
 end, false)
 
--- ADS (LT on gamepad)
-InputManager.BindAction("ADS", function(_actionName, inputState, _inputObject)
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-
-	if inputState == Enum.UserInputState.Begin then
-		EnterADS()
-	elseif inputState == Enum.UserInputState.End then
-		ExitADS()
-	end
-	return Enum.ContextActionResult.Sink
-end, false)
-
 -- Reload (X button on gamepad)
 InputManager.BindAction("Reload", function(_actionName, inputState, _inputObject)
 	if inputState ~= Enum.UserInputState.Begin then
@@ -1863,67 +1495,7 @@ InputManager.BindAction("Reload", function(_actionName, inputState, _inputObject
 	return Enum.ContextActionResult.Sink
 end, false)
 
--- Weapon slot switching (DPad on gamepad)
-InputManager.BindAction("Weapon1", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	-- SwitchToSlot handles empty slots gracefully
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(1)
-	return Enum.ContextActionResult.Sink
-end, false)
-
-InputManager.BindAction("Weapon2", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(2)
-	return Enum.ContextActionResult.Sink
-end, false)
-
-InputManager.BindAction("Weapon3", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(3)
-	return Enum.ContextActionResult.Sink
-end, false)
-
-InputManager.BindAction("Weapon4", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(4)
-	return Enum.ContextActionResult.Sink
-end, false)
-
-InputManager.BindAction("Weapon5", function(_actionName, inputState, _inputObject)
-	if inputState ~= Enum.UserInputState.Begin then
-		return Enum.ContextActionResult.Pass
-	end
-	if not canUseCombat() then
-		return Enum.ContextActionResult.Pass
-	end
-	GameModeService.SetMode("Gun")
-	SwitchToSlot(5)
-	return Enum.ContextActionResult.Sink
-end, false)
+-- Weapon slot switching handled by Roblox's built-in tool system (number keys + DPad)
 
 -- Force aim assist target update on respawn
 player.CharacterAdded:Connect(function()
@@ -1967,19 +1539,30 @@ local function bindToolEvents(tool: Tool)
 	end
 
 	tool.Equipped:Connect(function()
-		-- skip if keyboard handler already equipped this gun
+		-- skip if already equipped with this gun
 		if state.equipped and state.currentGun == gunName then
 			return
 		end
 		if state.equipped then
 			UnequipGun()
 		end
+
+		-- Update current slot from tool attribute for UI tracking
+		local slotIndex = tool:GetAttribute("SlotIndex")
+		if slotIndex then
+			currentSlot = slotIndex
+		end
+
+		-- Play weapon switch sound
+		AudioService.PlayWeaponSwitch(gunName)
 		EquipGun(gunName)
+
+		-- Notify ammo UI of slot change
+		notifyAmmoUI("SlotChanged", currentSlot, loadout)
 	end)
 
 	tool.Unequipped:Connect(function()
 		-- only unequip if we're still holding this specific gun
-		-- prevents race condition where keyboard handler already switched weapons
 		if state.equipped and state.currentGun == gunName then
 			UnequipGun()
 		end

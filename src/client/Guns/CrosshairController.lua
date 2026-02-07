@@ -316,6 +316,7 @@ end
 function CrosshairController.Show()
 	isVisible = true
 	_isGunCrosshair = true
+	crosshairFrame.Visible = true
 	-- respect showCrosshair setting
 	local shouldShow = isCrosshairEnabled()
 	for _, bar in bars do
@@ -326,25 +327,11 @@ function CrosshairController.Show()
 	end
 end
 
--- Hide gun crosshair (show dot instead)
+-- Hide crosshair entirely when no weapon is equipped
 function CrosshairController.Hide()
 	isVisible = false
 	_isGunCrosshair = false
-	for _, bar in bars do
-		bar.Visible = false
-	end
-	-- Show center dot when gun crosshair is hidden (if enabled and setting allows)
-	if centerDot then
-		centerDot.Visible = config.dotEnabled and isCrosshairEnabled()
-	end
-	currentSpread = 0
-	targetSpread = 0
-end
-
--- Completely hide all crosshair elements (for menus, etc.)
-function CrosshairController.HideAll()
-	isVisible = false
-	_isGunCrosshair = false
+	crosshairFrame.Visible = false
 	for _, bar in bars do
 		bar.Visible = false
 	end
@@ -355,15 +342,32 @@ function CrosshairController.HideAll()
 	targetSpread = 0
 end
 
--- show only the center dot (follows mouse)
-function CrosshairController.ShowDot()
+-- Completely hide all crosshair elements (for menus, etc.)
+-- Does NOT change _isGunCrosshair so we can restore properly after menu closes
+function CrosshairController.HideAll()
 	isVisible = false
-	_isGunCrosshair = false
+	crosshairFrame.Visible = false
 	for _, bar in bars do
 		bar.Visible = false
 	end
 	if centerDot then
-		centerDot.Visible = config.dotEnabled and isCrosshairEnabled()
+		centerDot.Visible = false
+	end
+	currentSpread = 0
+	targetSpread = 0
+end
+
+-- Restore crosshair after menu closes (only if gun was equipped before)
+function CrosshairController.ShowDot()
+	if not _isGunCrosshair then
+		return
+	end
+	-- Gun is equipped, restore the gun crosshair
+	isVisible = true
+	crosshairFrame.Visible = true
+	local shouldShow = isCrosshairEnabled()
+	for _, bar in bars do
+		bar.Visible = shouldShow
 	end
 end
 
