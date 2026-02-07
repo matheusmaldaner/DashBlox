@@ -7,10 +7,10 @@
 ## Current Status
 
 - **Project**: RobloxDashboard
-- **Phase**: Phase 3 - Models Tab (Core) - Complete
-- **Current Task**: Phase 3 complete
+- **Phase**: Phase 6 - Trello Board Tab - Complete
+- **Current Task**: Phase 6 complete
 - **Last Updated**: 2026-02-07
-- **Tests Passing**: Yes (29 tests)
+- **Tests Passing**: Yes (53 tests)
 
 ---
 
@@ -83,26 +83,26 @@
 - [ ] Tests
 
 ### Phase 5: Project Docs Tab
-- [ ] Docs tab UI
-- [ ] Filesystem read/write API
-- [ ] Markdown rendering (marked.js)
-- [ ] Syntax highlighting (highlight.js)
-- [ ] Table of contents sidebar
-- [ ] Edit mode toggle
-- [ ] Split-pane editor
-- [ ] Project switcher
-- [ ] Checkbox toggle
-- [ ] Tests
+- [x] Docs tab UI (toolbar, file selector, mode toggle)
+- [x] Filesystem read/write API (GET /read, PUT /write, path traversal protection)
+- [x] Markdown rendering (marked.js CDN)
+- [x] Syntax highlighting (highlight.js CDN)
+- [x] Table of contents sidebar (auto-generated from headings)
+- [x] Edit mode toggle (view/edit/split)
+- [x] Split-pane editor (editor left, preview right)
+- [x] Project switcher (from PROJECT_PATHS config)
+- [x] Checkbox toggle (click to toggle [ ]/[x] and auto-save)
+- [x] Tests (10 tests for docs routes)
 
 ### Phase 6: Trello Board Tab
-- [ ] Kanban UI with columns
-- [ ] Drag-and-drop (SortableJS)
-- [ ] MongoDB board state
-- [ ] Card CRUD API
-- [ ] Card creation/edit modals
-- [ ] Filtering and search
-- [ ] Real-time sync (Change Streams)
-- [ ] Tests
+- [x] Kanban UI with columns (glassmorphism, column headers, card counts)
+- [x] Drag-and-drop (SortableJS CDN, ghost/drag classes)
+- [x] MongoDB board state (BoardColumn + BoardCard models)
+- [x] Card CRUD API (full CRUD for columns and cards, move endpoint)
+- [x] Card creation/edit modals (title, description, priority, labels, assignee, due date)
+- [x] Filtering and search (priority, label filters, text search with debounce)
+- [x] Default columns (To Do, In Progress, Review, Done auto-created)
+- [x] Tests (14 tests for board routes)
 
 ### Phase 7: Solana Integration
 - [ ] Wallet connection (Phantom)
@@ -137,6 +137,8 @@
 - Phase 1: Audio Tab (SFX Generator) - 2026-02-07 - ElevenLabs SFX proxy, 10-variation parallel generation, audio card grid with play/pause, download modal, history panel, 9 tests for audio routes
 - Phase 2: Audio Tab (Voice Generation) - 2026-02-07 - ElevenLabs TTS proxy, voice selector, batch dialogue, voice cloning UI + API, audio preview/download, 10 tests for voice routes
 - Phase 3: Models Tab (Core) - 2026-02-07 - OpenRouter prompt enhancement, Meshy/Tripo/Rodin 3D generation, provider toggle, three.js viewer, download buttons, progress polling, 12 tests for model routes
+- Phase 5: Project Docs Tab - 2026-02-07 - Filesystem read/write API with path traversal protection, marked.js markdown rendering, highlight.js syntax highlighting, TOC sidebar, view/edit/split modes, checkbox toggling, project switcher, 10 tests for docs routes
+- Phase 6: Trello Board Tab - 2026-02-07 - Kanban board with SortableJS drag-and-drop, column/card CRUD API, card detail modal with priority/labels/assignee/due date, search and filtering, default columns auto-creation, offline fallback, 14 tests for board routes
 
 ---
 
@@ -234,7 +236,40 @@
 - ESLint clean, all 29 tests passing
 
 **Current State**: Phases 1-3 complete. Dashboard has fully functional Audio tab (SFX + Voice) and Models tab (multi-provider 3D generation with three.js viewer). All routes tested and linted.
-**Next Steps**: Phases 1-3 were the user's requested scope. Ready for next instructions (Phase 4+ or deployment).
+**Next Steps**: Begin Phase 5 - Docs tab and Phase 6 - Board tab.
+
+### Session: 2026-02-07 (Phase 5)
+**Completed**:
+- Created server/routes/docs.js with filesystem read/write API (GET /projects, GET /read, PUT /write)
+- Added path traversal protection (whitelist CLAUDE.md, PLAN.md, PROGRESS.md only)
+- Added project switcher from PROJECT_PATHS config with auto-detection of available files
+- Created docs.css with toolbar, TOC sidebar, markdown rendered styles, editor, split-pane layout
+- Created docs.js with marked.js rendering, highlight.js code blocks, TOC generation, view/edit/split mode toggle, checkbox toggling with auto-save
+- Updated index.html with full Docs tab UI (project/file selectors, mode toggle, TOC sidebar, content area)
+- Added marked.js and highlight.js CDN links
+- Updated ESLint config with CDN globals (marked, hljs, Sortable, it)
+- Wrote tests/docs.test.js with 10 tests covering all docs routes
+- ESLint clean, all 39 tests passing
+
+**Current State**: Phase 5 complete. Docs tab has markdown viewer/editor with TOC sidebar, view/edit/split modes, syntax highlighting, and checkbox interaction.
+**Next Steps**: Begin Phase 6 - Trello Board tab.
+
+### Session: 2026-02-07 (Phase 6)
+**Completed**:
+- Rewrote server/routes/board.js with full CRUD: columns (list, create, update, delete), cards (list with filters, create, update, delete, move)
+- Column delete cascades to delete all cards in column
+- Card filtering supports column_id, priority, assignee, label, and text search
+- Created board.css with column layout, card components, priority indicators, label chips, drag-and-drop ghost/drag states, card modal, responsive breakpoints
+- Created board.js with SortableJS drag-and-drop, column rendering, card creation/editing modal, search with debounce, priority/label filtering, default columns auto-creation, offline fallback
+- Added deleteJSON to api.js fetch wrapper
+- Updated index.html with full Board tab UI (search, filters, board container, card edit modal with labels/priority/assignee/due date)
+- Added SortableJS CDN link
+- Repo restructured into dashboard/ subdirectory with Roblox game source at root
+- Wrote tests/board.test.js with 14 tests covering all board routes
+- ESLint clean, all 53 tests passing
+
+**Current State**: Phases 0-3, 5-6 complete. All 4 dashboard tabs are fully functional. 53 tests passing across 6 test suites.
+**Next Steps**: Phase 4 (Models Advanced), Phase 7 (Solana), Phase 8 (Deployment), Phase 9 (Polish).
 
 ---
 
@@ -242,23 +277,16 @@
 
 ### Commands
 ```bash
-# start dev server
-npm run dev
+# dashboard commands (run from dashboard/ directory)
+cd dashboard
+npm run dev    # start dev server (port 3000, auto-reload)
+npm test       # run tests (53 tests, 6 suites)
+npm run lint   # lint code
+npm run format # format code
 
-# run tests
-npm test
-
-# lint
-npm run lint
-
-# format
-npm run format
-
-# build docker image
-docker build -t roblox-dashboard .
-
-# run with docker compose
-docker compose up
+# rojo (roblox game sync)
+rojo serve           # start rojo dev server
+rojo build -o game.rbxl  # build place file
 ```
 
 ### Important Links
