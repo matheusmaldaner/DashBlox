@@ -1,6 +1,7 @@
 # dashboard
 node_modules/
 .env
+settings.json
 dist/
 coverage/
 

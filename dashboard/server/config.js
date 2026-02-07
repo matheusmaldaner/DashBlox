@@ -11,6 +11,7 @@ module.exports = {
   meshyApiKey: process.env.MESHY_API_KEY || '',
   tripoApiKey: process.env.TRIPO_API_KEY || '',
   rodinApiKey: process.env.RODIN_API_KEY || '',
+  replicateApiKey: process.env.REPLICATE_API_KEY || '',
   robloxApiKey: process.env.ROBLOX_API_KEY || '',
   solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com',
   solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY || '',
