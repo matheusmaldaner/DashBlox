@@ -10,9 +10,8 @@ const projectSchema = new mongoose.Schema({
   updated_at: { type: Date, default: Date.now },
 });
 
-projectSchema.pre('save', function (next) {
+projectSchema.pre('save', function () {
   this.updated_at = new Date();
-  next();
 });
 
 module.exports = mongoose.model('Project', projectSchema);

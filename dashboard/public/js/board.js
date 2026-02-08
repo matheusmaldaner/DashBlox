@@ -27,8 +27,6 @@
     const searchInput = document.getElementById('boardSearch');
     const priorityFilter = document.getElementById('boardFilterPriority');
     const labelFilter = document.getElementById('boardFilterLabel');
-    const addColumnBtn = document.getElementById('boardAddColumnBtn');
-
     if (!searchInput) return;
 
     searchInput.addEventListener('input', debounce(() => {
@@ -45,8 +43,6 @@
       filterLabel = labelFilter.value;
       renderBoard();
     });
-
-    addColumnBtn.addEventListener('click', addColumn);
 
     // close modal on overlay click
     const modal = document.getElementById('cardModal');
@@ -114,13 +110,13 @@
       container.appendChild(colEl);
     });
 
-    // add column button
-    const addBtn = document.createElement('button');
-    addBtn.className = 'board-add-column';
-    addBtn.id = 'boardAddColumnBtn';
-    addBtn.innerHTML = plusIcon + ' add column';
-    addBtn.addEventListener('click', addColumn);
-    container.appendChild(addBtn);
+    // add column button after all columns
+    const addColBtn = document.createElement('button');
+    addColBtn.className = 'board-add-column-btn';
+    addColBtn.id = 'boardAddColumnBtn';
+    addColBtn.innerHTML = `${plusIcon}<span>add column</span>`;
+    addColBtn.addEventListener('click', addColumn);
+    container.appendChild(addColBtn);
 
     // initialize sortable on each card list
     initDragAndDrop();
@@ -248,15 +244,17 @@
       card.position = newPosition;
     }
 
-    // persist to server
-    try {
-      await api.putJSON(`/api/board/cards/${cardId}/move`, {
-        column_id: newColumnId,
-        position: newPosition,
-      });
-    } catch (err) {
-      console.error('failed to move card:', err);
-      showToast('failed to save card position');
+    // persist to server (skip for temp/offline cards)
+    if (!cardId.startsWith('temp-')) {
+      try {
+        await api.putJSON(`/api/board/cards/${cardId}/move`, {
+          column_id: newColumnId,
+          position: newPosition,
+        });
+      } catch (err) {
+        console.error('failed to move card:', err);
+        showToast('failed to save card position');
+      }
     }
 
     // update column counts
@@ -296,7 +294,9 @@
   }
 
   async function addColumn() {
-    const title = prompt('column name:');
+    const title = await window.dialog.prompt('new column', {
+      placeholder: 'column name...',
+    });
     if (!title) return;
 
     try {
@@ -311,7 +311,12 @@
   }
 
   async function deleteColumn(columnId) {
-    if (!confirm('delete this column and all its cards?')) return;
+    const confirmed = await window.dialog.confirm('delete column', {
+      message: 'delete this column and all its cards?',
+      okText: 'delete',
+      danger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await api.deleteJSON(`/api/board/columns/${columnId}`);

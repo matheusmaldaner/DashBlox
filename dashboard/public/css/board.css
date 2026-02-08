@@ -32,25 +32,60 @@
   flex: 1;
 }
 
+/* add column button (inline with columns) */
+.board-add-column-btn {
+  width: 280px;
+  flex: 0 0 280px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.board-add-column-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.board-add-column-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* board container */
 .board-container {
   display: flex;
   gap: 16px;
   padding: 0 4px 24px;
-  overflow-x: auto;
+  margin-top: 20px;
+  overflow-x: hidden;
   min-height: calc(100vh - 220px);
   align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 /* column */
 .board-column {
-  min-width: 280px;
-  max-width: 320px;
-  flex-shrink: 0;
+  width: 280px;
+  flex: 0 0 280px;
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 220px);
+  padding: 0;
+  overflow: visible;
 }
 
 .board-column-header {
@@ -328,9 +363,8 @@
 
 /* add column button */
 .board-add-column {
-  min-width: 280px;
-  max-width: 320px;
-  flex-shrink: 0;
+  width: 280px;
+  flex: 0 0 280px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -462,6 +496,12 @@
   margin-bottom: 16px;
 }
 
+/* disable glass-panel pseudo-elements on board columns to prevent visible square artifacts */
+.board-column::before,
+.board-column::after {
+  display: none;
+}
+
 /* light theme board overrides */
 [data-theme="light"] .board-column {
   background: rgba(255, 255, 255, 0.92);
@@ -472,6 +512,11 @@
 [data-theme="light"] .board-column-count { background: rgba(0, 0, 0, 0.06); color: var(--text-secondary); }
 [data-theme="light"] .board-add-column { border-color: rgba(0, 0, 0, 0.12); background: rgba(255, 255, 255, 0.5); }
 [data-theme="light"] .board-add-column:hover { background: var(--accent-dim); border-color: var(--accent); }
+
+/* board tab should not be constrained by max-width */
+#tab-board.tab-content {
+  max-width: none;
+}
 
 /* responsive */
 @media (max-width: 700px) {

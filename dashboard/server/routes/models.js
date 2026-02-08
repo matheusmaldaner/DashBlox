@@ -77,7 +77,7 @@ router.post('/generate', async (req, res, next) => {
       enhanced_prompt: enhanced_prompt || null,
       provider,
       provider_task_id: result.taskId,
-      status: 'processing',
+      status: 'generating',
       tags: [`provider:${provider}`],
     });
 
@@ -125,7 +125,7 @@ router.get('/status/:taskId', async (req, res, next) => {
       await Asset3D.findOneAndUpdate(
         { provider_task_id: taskId },
         {
-          status: status.status === 'ready' ? 'completed' : 'failed',
+          status: status.status === 'ready' ? 'ready' : 'error',
           ...(status.modelUrls?.glb ? { file_path: status.modelUrls.glb } : {}),
           ...(status.thumbnailUrl ? { thumbnail_path: status.thumbnailUrl } : {}),
         }
@@ -236,7 +236,7 @@ router.post('/generate-image', upload.single('image'), async (req, res, next) =>
       enhanced_prompt: negative_prompt || null,
       provider,
       provider_task_id: result.taskId,
-      status: 'processing',
+      status: 'generating',
       tags: [`provider:${provider}`, 'image-to-3d'],
     });
 

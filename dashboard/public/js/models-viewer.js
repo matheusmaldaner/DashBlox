@@ -13,7 +13,7 @@ const modelsViewer = (function () { // eslint-disable-line no-unused-vars
     const THREE = window.THREE;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a2e);
+    scene.background = new THREE.Color(0xffffff);
 
     camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
     camera.position.set(3, 2, 3);
@@ -22,6 +22,9 @@ const modelsViewer = (function () { // eslint-disable-line no-unused-vars
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
     container.appendChild(renderer.domElement);
 
     if (window.THREE.OrbitControls) {
@@ -31,19 +34,27 @@ const modelsViewer = (function () { // eslint-disable-line no-unused-vars
     }
 
     // lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.5);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
     directionalLight.position.set(5, 10, 7);
     directionalLight.castShadow = true;
     scene.add(directionalLight);
 
-    const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+    const fillLight = new THREE.DirectionalLight(0x4488ff, 0.4);
     fillLight.position.set(-5, 3, -5);
     scene.add(fillLight);
 
-    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    backLight.position.set(0, 5, -10);
+    scene.add(backLight);
+
+    const gridHelper = new THREE.GridHelper(10, 10, 0xcccccc, 0xe0e0e0);
     scene.add(gridHelper);
 
     const resizeObserver = new ResizeObserver(() => {
@@ -64,10 +75,12 @@ const modelsViewer = (function () { // eslint-disable-line no-unused-vars
   }
 
   function loadModelPreview(url) {
+    console.log('[viewer] loadModelPreview called with:', url);
     if (typeof window.THREE === 'undefined') {
-      console.warn('three.js not loaded, skipping preview');
+      console.warn('[viewer] THREE is undefined, skipping');
       return;
     }
+    console.log('[viewer] THREE loaded, GLTFLoader:', !!window.THREE.GLTFLoader, 'OrbitControls:', !!window.THREE.OrbitControls);
 
     initViewer();
 
@@ -80,9 +93,11 @@ const modelsViewer = (function () { // eslint-disable-line no-unused-vars
 
     if (window.THREE.GLTFLoader) {
       const loader = new THREE.GLTFLoader();
+      console.log('[viewer] loading model from:', url);
       loader.load(
         url,
         (gltf) => {
+          console.log('[viewer] model loaded successfully, children:', gltf.scene.children.length);
           const model = gltf.scene;
           model.name = 'loadedModel';
 
@@ -91,6 +106,7 @@ const modelsViewer = (function () { // eslint-disable-line no-unused-vars
           const size = box.getSize(new THREE.Vector3());
           const maxDim = Math.max(size.x, size.y, size.z);
           const scale = 2 / maxDim;
+          console.log('[viewer] model bounds:', { size: { x: size.x, y: size.y, z: size.z }, maxDim, scale });
 
           model.position.sub(center);
           model.scale.setScalar(scale);
@@ -100,9 +116,13 @@ const modelsViewer = (function () { // eslint-disable-line no-unused-vars
           camera.lookAt(0, 0, 0);
           if (controls) controls.target.set(0, 0, 0);
         },
-        undefined,
-        (err) => console.error('failed to load model:', err)
+        (progress) => {
+          if (progress.total) console.log('[viewer] loading progress:', Math.round(progress.loaded / progress.total * 100) + '%');
+        },
+        (err) => console.error('[viewer] failed to load model:', err)
       );
+    } else {
+      console.warn('[viewer] GLTFLoader not available');
     }
   }
 

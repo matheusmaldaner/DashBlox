@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RobloxDashboard</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'/%3E%3Cpolyline points='3.27 6.96 12 12.01 20.73 6.96'/%3E%3Cline x1='12' y1='22.08' x2='12' y2='12'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/audio.css">
+  <link rel="stylesheet" href="/css/voice.css">
+  <link rel="stylesheet" href="/css/models.css">
+  <link rel="stylesheet" href="/css/models-advanced.css">
+  <link rel="stylesheet" href="/css/docs.css">
+  <link rel="stylesheet" href="/css/board.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+</head>
+<body>
+  <!-- liquid glass background -->
+  <div class="glass-bg"></div>
+
+  <!-- header -->
+  <header>
+    <a href="/" class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+      RobloxDashboard
+    </a>
+    <div class="header-actions">
+      <button class="settings-btn" id="settingsBtn" aria-label="settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button class="theme-toggle" id="themeToggle" aria-label="toggle theme">
+        <!-- sun icon (shown in dark mode) -->
+        <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- moon icon (shown in light mode) -->
+        <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- tab navigation -->
+  <nav class="tab-nav" style="position: fixed; top: 57px; left: 0; right: 0; z-index: 99;">
+    <button class="tab-btn active" data-tab="models">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      </svg>
+      Models
+    </button>
+    <button class="tab-btn" data-tab="converter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="16 3 21 3 21 8"/>
+        <line x1="4" y1="20" x2="21" y2="3"/>
+        <polyline points="21 16 21 21 16 21"/>
+        <line x1="15" y1="15" x2="21" y2="21"/>
+        <line x1="4" y1="4" x2="9" y2="9"/>
+      </svg>
+      Converter
+    </button>
+    <button class="tab-btn" data-tab="audio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      </svg>
+      Audio
+    </button>
+    <button class="tab-btn" data-tab="docs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      Docs
+    </button>
+    <button class="tab-btn" data-tab="board">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"/>
+        <rect x="14" y="3" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/>
+        <rect x="3" y="14" width="7" height="7"/>
+      </svg>
+      Board
+    </button>
+  </nav>
+
+  <!-- main content -->
+  <main>
+    <!-- models tab -->
+    <div class="tab-content active" id="tab-models">
+      <!-- model controls -->
+      <div class="model-controls glass-panel">
+        <!-- mode toggle: text vs image -->
+        <div class="model-mode-toggle">
+          <button class="active" data-mode="text" id="modelModeText">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            text to 3d
+          </button>
+          <button data-mode="image" id="modelModeImage">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            image to 3d
+          </button>
+        </div>
+
+        <!-- text-to-3d input -->
+        <div class="model-text-input" id="modelTextInput">
+          <div class="model-prompt-row">
+            <div class="input-group">
+              <label for="modelPrompt">describe your 3d model</label>
+              <input type="text" class="input" id="modelPrompt" placeholder="a medieval wooden chair with carved armrests..." maxlength="500">
+            </div>
+            <button class="btn btn-ghost enhance-btn" id="modelEnhanceBtn">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              enhance
+            </button>
+          </div>
+
+          <!-- negative prompt -->
+          <div class="model-prompt-row">
+            <div class="input-group">
+              <label for="modelNegativePrompt">negative prompt (optional)</label>
+              <input type="text" class="input" id="modelNegativePrompt" placeholder="low quality, blurry, deformed..." maxlength="300">
+            </div>
+          </div>
+        </div>
+
+        <!-- image-to-3d upload -->
+        <div class="model-image-input" id="modelImageInput" style="display: none;">
+          <div class="model-upload-area" id="modelUploadArea">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <p>drop an image here or click to upload</p>
+            <span>supports jpg, png, webp (max 10mb)</span>
+            <input type="file" id="modelImageFile" accept="image/jpeg,image/png,image/webp">
+          </div>
+          <div class="model-upload-preview" id="modelUploadPreview" style="display: none;">
+            <img id="modelPreviewImg" alt="uploaded reference">
+            <button class="btn btn-ghost btn-sm" id="modelClearImage">clear</button>
+          </div>
+        </div>
+
+        <!-- enhanced prompt display -->
+        <div class="enhanced-prompt" id="enhancedPrompt">
+          <div class="enhanced-prompt-label">enhanced prompt</div>
+          <div id="enhancedPromptText"></div>
+        </div>
+
+        <div class="model-generate-row">
+          <select class="select model-provider-select" id="modelProviderSelect">
+            <option value="meshy">Meshy</option>
+            <option value="tripo">Tripo3D</option>
+            <option value="rodin">Rodin</option>
+            <option value="replicate">Replicate - Trellis (image-to-3d)</option>
+          </select>
+
+          <!-- quality tier (rodin) -->
+          <select class="select model-quality-select" id="modelQuality" style="display: none;">
+            <option value="Sketch">sketch</option>
+            <option value="Regular" selected>regular</option>
+            <option value="Detail">detail</option>
+            <option value="Smooth">smooth</option>
+          </select>
+
+          <button class="generate-play-btn" id="modelGenerateBtn" title="generate">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="model-status" id="modelStatus"></div>
+
+        <!-- progress bar -->
+        <div class="model-progress" id="modelProgress">
+          <div class="model-progress-bar" id="modelProgressBar"></div>
+        </div>
+      </div>
+
+      <!-- 3d viewer -->
+      <div class="model-viewer-container" id="modelViewer">
+        <div class="model-viewer-empty" id="modelViewerEmpty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+          <p>3d model will appear here after generation</p>
+        </div>
+        <div id="modelViewerCanvas"></div>
+      </div>
+
+      <!-- download buttons -->
+      <div class="model-download-row" id="modelDownloadRow">
+        <button data-format="glb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          GLB
+        </button>
+        <button data-format="fbx">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          FBX
+        </button>
+        <button data-format="obj">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          OBJ
+        </button>
+        <button class="roblox-upload-btn" id="modelUploadRoblox">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          upload to roblox
+        </button>
+      </div>
+
+      <!-- model history -->
+      <div class="model-history">
+        <h3>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          recent generations
+        </h3>
+        <div class="model-history-grid" id="modelHistoryGrid">
+          <div class="model-history-empty">no previous generations</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- converter tab -->
+    <div class="tab-content" id="tab-converter">
+      <div class="converter-panel glass-panel">
+        <h3>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 3 21 3 21 8"/>
+            <line x1="4" y1="20" x2="21" y2="3"/>
+            <polyline points="21 16 21 21 16 21"/>
+            <line x1="15" y1="15" x2="21" y2="21"/>
+            <line x1="4" y1="4" x2="9" y2="9"/>
+          </svg>
+          convert model file
+        </h3>
+        <p class="converter-desc">convert 3d model files between formats for roblox compatibility</p>
+        <div class="converter-content">
+          <div class="converter-upload-area" id="converterUploadArea">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p>drop a 3d model file or click to upload</p>
+            <span>supports glb, gltf, fbx, obj (max 50mb)</span>
+            <input type="file" id="converterFileInput" accept=".glb,.gltf,.fbx,.obj">
+          </div>
+          <div class="converter-file-info" id="converterFileInfo" style="display: none;">
+            <div class="converter-file-name" id="converterFileName"></div>
+            <button class="btn btn-ghost btn-sm" id="converterClearFile">clear</button>
+          </div>
+          <div class="converter-actions" id="converterActions" style="display: none;">
+            <div class="input-group">
+              <label for="converterTargetFormat">convert to</label>
+              <select class="select" id="converterTargetFormat">
+                <option value="fbx">FBX (roblox compatible)</option>
+                <option value="obj">OBJ (roblox compatible)</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="converterConvertBtn">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 3 21 3 21 8"/>
+                <line x1="4" y1="20" x2="21" y2="3"/>
+              </svg>
+              convert and download
+            </button>
+          </div>
+          <div class="converter-status" id="converterStatus"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- audio tab -->
+    <div class="tab-content" id="tab-audio">
+      <!-- sfx controls -->
+      <div class="audio-controls glass-panel">
+        <div class="audio-prompt-row">
+          <div class="input-group">
+            <label for="sfxPrompt">sound effect prompt</label>
+            <input type="text" class="input" id="sfxPrompt" placeholder="describe your sound effect..." maxlength="200">
+          </div>
+          <button class="btn btn-ghost enhance-btn" id="sfxEnhanceBtn">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            enhance
+          </button>
+        </div>
+
+        <!-- enhanced prompt display -->
+        <div class="enhanced-prompt" id="sfxEnhancedPrompt">
+          <div class="enhanced-prompt-label">enhanced prompt</div>
+          <div id="sfxEnhancedPromptText"></div>
+        </div>
+
+        <div class="audio-sliders">
+          <div class="slider-group">
+            <label>duration <span id="sfxDurationValue">Auto</span></label>
+            <input type="range" id="sfxDuration" min="0" max="22" step="0.5" value="0">
+          </div>
+          <div class="slider-group">
+            <label>prompt influence <span id="sfxInfluenceValue">0.3</span></label>
+            <input type="range" id="sfxInfluence" min="0" max="1" step="0.05" value="0.3">
+          </div>
+          <div class="slider-group">
+            <label>variations <span id="sfxVariationsValue">4</span></label>
+            <input type="range" id="sfxVariations" min="1" max="10" step="1" value="4">
+          </div>
+        </div>
+
+        <div class="audio-generate-row">
+          <button class="btn btn-primary generate-btn" id="sfxGenerateBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            generate
+          </button>
+          <div class="audio-status" id="sfxStatus"></div>
+        </div>
+      </div>
+
+      <!-- variation cards grid (dynamically populated) -->
+      <div class="audio-grid" id="audioGrid"></div>
+
+      <!-- download modal -->
+      <div class="download-modal modal-overlay" id="downloadModal">
+        <div class="modal glass-panel">
+          <h3>download sound effect</h3>
+          <div class="modal-body">
+            <div class="input-group">
+              <label for="downloadFilename">filename</label>
+              <input type="text" class="input" id="downloadFilename" placeholder="sound-effect">
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-ghost" id="downloadCancelBtn">cancel</button>
+              <button class="btn btn-primary" id="downloadConfirmBtn">download .mp3</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- history section -->
+      <div class="audio-history">
+        <h3>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          recent generations
+        </h3>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">no previous generations</div>
+        </div>
+      </div>
+
+      <!-- voice generation section -->
+      <div class="voice-section">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+          voice generation
+        </h3>
+
+        <div class="voice-controls glass-panel">
+          <div class="voice-selectors">
+            <div class="input-group">
+              <label for="voiceSelect">voice</label>
+              <select class="select" id="voiceSelect">
+                <option value="">loading voices...</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="voiceModel">model</label>
+              <select class="select" id="voiceModel">
+                <option value="eleven_flash_v2_5">flash v2.5 (fast)</option>
+                <option value="eleven_turbo_v2_5">turbo v2.5 (balanced)</option>
+                <option value="eleven_multilingual_v2">multilingual v2 (quality)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="voice-sliders">
+            <div class="slider-group">
+              <label>stability <span id="voiceStabilityValue">0.5</span></label>
+              <input type="range" id="voiceStability" min="0" max="1" step="0.05" value="0.5">
+            </div>
+            <div class="slider-group">
+              <label>similarity <span id="voiceSimilarityValue">0.75</span></label>
+              <input type="range" id="voiceSimilarity" min="0" max="1" step="0.05" value="0.75">
+            </div>
+            <div class="slider-group">
+              <label>speed <span id="voiceSpeedValue">1.0</span></label>
+              <input type="range" id="voiceSpeed" min="0.5" max="2" step="0.1" value="1">
+            </div>
+          </div>
+
+          <div class="voice-batch-area">
+            <label for="voiceText">
+              dialogue lines
+              <span class="batch-hint">(one line per generation, separate with newlines)</span>
+            </label>
+            <textarea class="textarea" id="voiceText" rows="4" placeholder="enter dialogue lines...&#10;each line generates separately&#10;great for batch NPC dialogue"></textarea>
+          </div>
+
+          <div class="voice-generate-row">
+            <button class="btn btn-primary generate-btn" id="voiceGenerateBtn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              </svg>
+              generate
+            </button>
+            <div class="voice-status" id="voiceStatus"></div>
+          </div>
+        </div>
+
+        <!-- voice results -->
+        <div class="voice-results" id="voiceResults"></div>
+
+        <!-- voice cloning -->
+        <div class="voice-clone-section">
+          <h4>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <line x1="20" y1="8" x2="20" y2="14"/>
+              <line x1="23" y1="11" x2="17" y2="11"/>
+            </svg>
+            clone a voice
+          </h4>
+          <div class="clone-controls">
+            <div class="clone-row">
+              <div class="input-group">
+                <label for="cloneVoiceName">voice name</label>
+                <input type="text" class="input" id="cloneVoiceName" placeholder="character name...">
+              </div>
+              <div class="input-group">
+                <label for="cloneVoiceDesc">description</label>
+                <input type="text" class="input" id="cloneVoiceDesc" placeholder="optional description...">
+              </div>
+            </div>
+            <div class="file-upload-area" id="cloneUploadArea">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <div>click to upload audio samples (30+ seconds recommended)</div>
+              <input type="file" id="cloneFileInput" accept="audio/*" multiple>
+            </div>
+            <div class="file-upload-list" id="cloneFileList"></div>
+            <button class="btn btn-primary" id="cloneVoiceBtn" disabled>
+              clone voice
+            </button>
+            <div class="voice-status" id="cloneStatus"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- docs tab -->
+    <div class="tab-content" id="tab-docs">
+      <!-- docs toolbar -->
+      <div class="docs-toolbar glass-panel">
+        <select class="select" id="docsProjectSelect">
+          <option value="">loading projects...</option>
+        </select>
+        <select class="select" id="docsFileSelect">
+          <option value="">select file</option>
+        </select>
+        <div class="docs-toolbar-spacer"></div>
+        <div class="docs-mode-toggle">
+          <button class="active" id="docsModeView">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            view
+          </button>
+          <button id="docsModeEdit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            edit
+          </button>
+          <button id="docsModeSplit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="12" y1="3" x2="12" y2="21"/>
+            </svg>
+            split
+          </button>
+        </div>
+        <button class="btn btn-primary docs-save-btn" id="docsSaveBtn">saved</button>
+      </div>
+
+      <!-- docs layout: toc sidebar + content -->
+      <div class="docs-layout">
+        <div class="docs-toc glass-panel">
+          <h4>table of contents</h4>
+          <ul class="docs-toc-list" id="docsTocList"></ul>
+        </div>
+        <div class="docs-content glass-panel" id="docsContentArea">
+          <div class="docs-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <p>select a project and file to get started</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- board tab -->
+    <div class="tab-content" id="tab-board">
+      <!-- board toolbar -->
+      <div class="board-toolbar glass-panel">
+        <input type="text" class="input board-search" id="boardSearch" placeholder="search cards...">
+        <div class="board-filters">
+          <select class="select" id="boardFilterPriority">
+            <option value="">all priorities</option>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+            <option value="critical">critical</option>
+          </select>
+          <select class="select" id="boardFilterLabel">
+            <option value="">all labels</option>
+            <option value="building">building</option>
+            <option value="audio">audio</option>
+            <option value="ui">ui</option>
+            <option value="bug">bug</option>
+            <option value="feature">feature</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- board columns container -->
+      <div class="board-container" id="boardContainer">
+        <div class="board-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          <p>loading board...</p>
+        </div>
+      </div>
+
+      <!-- card detail/edit modal -->
+      <div class="card-modal modal-overlay" id="cardModal">
+        <div class="modal glass-panel">
+          <h3>edit card</h3>
+          <div class="modal-body">
+            <div class="input-group">
+              <label for="cardModalTitle">title</label>
+              <input type="text" class="input" id="cardModalTitle" placeholder="card title...">
+            </div>
+            <div class="input-group">
+              <label for="cardModalDesc">description</label>
+              <textarea class="textarea" id="cardModalDesc" rows="3" placeholder="add a description..."></textarea>
+            </div>
+            <div class="input-row">
+              <div class="input-group">
+                <label for="cardModalPriority">priority</label>
+                <select class="select" id="cardModalPriority">
+                  <option value="low">low</option>
+                  <option value="medium" selected>medium</option>
+                  <option value="high">high</option>
+                  <option value="critical">critical</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="cardModalAssignee">assignee</label>
+                <input type="text" class="input" id="cardModalAssignee" placeholder="team member...">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="cardModalDue">due date</label>
+              <input type="date" class="input" id="cardModalDue">
+            </div>
+            <div class="input-group">
+              <label>labels</label>
+              <div class="card-modal-labels" id="cardModalLabels"></div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-ghost" id="cardModalDelete" style="margin-right: auto; color: var(--danger);">delete</button>
+              <button class="btn btn-ghost" id="cardModalCancel">cancel</button>
+              <button class="btn btn-primary" id="cardModalSave">save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- settings modal -->
+  <div class="settings-modal modal-overlay" id="settingsModal">
+    <div class="modal glass-panel">
+      <div class="modal-header">
+        <h2>settings</h2>
+        <button class="modal-close" id="settingsCloseBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="settings-desc">configure api keys for external services. keys are saved server-side and override .env values.</p>
+        <div class="settings-keys" id="settingsKeys"></div>
+        <div class="settings-actions">
+          <button class="btn btn-ghost" id="settingsCancelBtn">cancel</button>
+          <button class="btn btn-primary" id="settingsSaveBtn">save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- reusable dialog modal (replaces native prompt/confirm) -->
+  <div class="dialog-modal modal-overlay" id="dialogModal">
+    <div class="modal glass-panel dialog-panel">
+      <div class="dialog-header">
+        <h3 id="dialogTitle">dialog</h3>
+        <button class="modal-close" id="dialogCloseBtn">&times;</button>
+      </div>
+      <div class="dialog-body">
+        <p id="dialogMessage" class="dialog-message"></p>
+        <div class="input-group dialog-input-group" id="dialogInputGroup">
+          <input type="text" class="input" id="dialogInput" placeholder="">
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" id="dialogCancelBtn">cancel</button>
+        <button class="btn btn-primary" id="dialogOkBtn">ok</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- three.js (r147 is the last version with legacy global builds) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <!-- marked.js + highlight.js for docs tab -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" defer></script>
+
+  <!-- sortablejs for board tab -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" defer></script>
+
+  <script src="/js/theme.js"></script>
+  <script src="/js/dialog.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/audio.js"></script>
+  <script src="/js/voice.js"></script>
+  <script src="/js/models-viewer.js"></script>
+  <script src="/js/models.js"></script>
+  <script src="/js/models-converter.js"></script>
+  <script src="/js/docs.js"></script>
+  <script src="/js/board.js"></script>
+  <script src="/js/settings.js"></script>
+</body>
+</html>

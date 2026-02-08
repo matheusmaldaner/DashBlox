@@ -187,9 +187,11 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: var(--radius-xl);
   width: 100%;
-  max-width: 480px;
+  max-width: 560px;
   max-height: 85vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
   position: relative;
   box-shadow:
     0 24px 80px rgba(0, 0, 0, 0.4),
@@ -224,11 +226,28 @@
   }
 }
 
+.modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.modal::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 24px 32px;
 }
 
 .modal-header h2 {
@@ -256,7 +275,68 @@
 }
 
 .modal-body {
-  padding: 0 24px 24px;
+  padding: 0 32px 28px;
+}
+
+/* dialog modal (replaces native prompt/confirm) */
+.dialog-panel {
+  max-width: 420px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 0;
+}
+
+.dialog-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dialog-body {
+  padding: 16px 24px 0;
+}
+
+.dialog-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.dialog-input-group {
+  margin: 0;
+}
+
+.dialog-input-group .input {
+  width: 100%;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px 20px;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.btn-danger:hover {
+  opacity: 0.85;
 }
 
 /* settings modal */
@@ -274,6 +354,25 @@
   margin-bottom: 20px;
   max-height: 400px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.settings-keys::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-keys::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-keys::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.settings-keys::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
 }
 
 .settings-key-group {

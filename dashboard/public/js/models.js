@@ -63,12 +63,22 @@
   function toggleMode(mode) {
     const textInput = document.getElementById('modelTextInput');
     const imageInput = document.getElementById('modelImageInput');
+    const providerSelect = document.getElementById('modelProviderSelect');
+    const replicateOption = providerSelect?.querySelector('option[value="replicate"]');
+
     if (mode === 'text') {
       textInput.style.display = '';
       imageInput.style.display = 'none';
+      // hide replicate in text mode (trellis only supports image-to-3d)
+      if (replicateOption) replicateOption.style.display = 'none';
+      if (selectedProvider === 'replicate') {
+        providerSelect.value = 'meshy';
+        selectedProvider = 'meshy';
+      }
     } else {
       textInput.style.display = 'none';
       imageInput.style.display = '';
+      if (replicateOption) replicateOption.style.display = '';
     }
   }
 
@@ -167,18 +177,6 @@
 
   async function handleGenerate() {
     if (currentMode === 'image') return handleGenerateImage();
-
-    // trellis only supports image-to-3d, auto-switch to image mode
-    if (selectedProvider === 'replicate') {
-      const imageBtn = document.getElementById('modelModeImage');
-      if (imageBtn) {
-        imageBtn.click();
-        const statusEl = document.getElementById('modelStatus');
-        statusEl.innerHTML = 'trellis only supports image-to-3d. switched to image mode - upload an image to continue.';
-        statusEl.className = 'model-status';
-      }
-      return;
-    }
 
     const promptInput = document.getElementById('modelPrompt');
     const prompt = promptInput.value.trim();
@@ -417,10 +415,15 @@
   function renderHistoryGrid(grid, items) {
     grid.innerHTML = items
       .map((item) => {
-        const statusClass = item.status === 'completed' ? 'completed' : item.status === 'failed' ? 'failed' : 'processing';
-        const thumbHtml = item.thumbnail_path
-          ? `<img src="${escapeHtml(item.thumbnail_path)}" alt="thumbnail">`
-          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+        const statusClass = item.status === 'ready' ? 'completed' : item.status === 'error' ? 'failed' : 'processing';
+        let thumbHtml;
+        if (item.thumbnail_path && item.thumbnail_path.endsWith('.mp4')) {
+          thumbHtml = `<video src="${escapeHtml(item.thumbnail_path)}" autoplay loop muted playsinline></video>`;
+        } else if (item.thumbnail_path) {
+          thumbHtml = `<img src="${escapeHtml(item.thumbnail_path)}" alt="thumbnail">`;
+        } else {
+          thumbHtml = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+        }
 
         return `
         <div class="model-history-item clickable" data-file-path="${escapeHtml(item.file_path || '')}">

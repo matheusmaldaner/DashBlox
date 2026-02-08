@@ -21,9 +21,8 @@ const boardCardSchema = new mongoose.Schema({
   updated_at: { type: Date, default: Date.now },
 });
 
-boardCardSchema.pre('save', function (next) {
+boardCardSchema.pre('save', function () {
   this.updated_at = new Date();
-  next();
 });
 
 module.exports = mongoose.model('BoardCard', boardCardSchema);
