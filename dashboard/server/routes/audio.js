@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { generateSFX, generateTTS, listVoices, cloneVoice } = require('../services/elevenlabs');
+const { enhancePrompt } = require('../services/openrouter');
 const AssetAudio = require('../models/AssetAudio');
 
 // ensure audio uploads directory exists
@@ -26,6 +27,17 @@ const upload = multer({
       cb(new Error('only audio files are allowed'));
     }
   },
+});
+
+// POST /api/audio/enhance-prompt - enhance sfx prompt via openrouter/gemini
+router.post('/enhance-prompt', async (req, res, next) => {
+  try {
+    const { prompt } = req.body;
+    const result = await enhancePrompt({ prompt, type: 'audio' });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // POST /api/audio/sfx - generate sound effect via elevenlabs
@@ -49,20 +61,28 @@ router.post('/sfx', async (req, res, next) => {
 // POST /api/audio/sfx/save - save sfx metadata + audio file to mongodb
 router.post('/sfx/save', async (req, res, next) => {
   try {
-    const { prompt, duration_seconds, prompt_influence, variation_count, audio_data } = req.body;
+    const { prompt, duration_seconds, prompt_influence, variation_count, audio_data, variation_data } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ success: false, error: 'prompt is required' });
     }
 
-    // persist audio file to disk if provided
-    let filePath = '';
-    if (audio_data) {
-      const buffer = Buffer.from(audio_data, 'base64');
+    // persist all variation audio files to disk
+    const variationFiles = [];
+    const audioArray = variation_data || (audio_data ? [audio_data] : []);
+    for (const b64 of audioArray) {
+      if (!b64) {
+        variationFiles.push('');
+        continue;
+      }
+      const buffer = Buffer.from(b64, 'base64');
       const fileName = `sfx-${crypto.randomUUID()}.mp3`;
       fs.writeFileSync(path.join(audioDir, fileName), buffer);
-      filePath = `/uploads/audio/${fileName}`;
+      variationFiles.push(`/uploads/audio/${fileName}`);
     }
+
+    // first valid file is the primary file_path (backwards compat)
+    const filePath = variationFiles.find((f) => f) || '';
 
     const asset = await AssetAudio.create({
       name: prompt.slice(0, 60),
@@ -71,7 +91,13 @@ router.post('/sfx/save', async (req, res, next) => {
       model: 'elevenlabs-sfx',
       duration_seconds: duration_seconds || 0,
       file_path: filePath,
+      variation_files: variationFiles,
       tags: [`influence:${prompt_influence || 0.3}`, `variations:${variation_count || 10}`],
+      params: {
+        duration: duration_seconds || 0,
+        influence: prompt_influence || 0.3,
+        variations: variation_count || 4,
+      },
     });
 
     res.json({ success: true, data: asset });
@@ -104,7 +130,7 @@ router.post('/tts', async (req, res, next) => {
 // POST /api/audio/tts/save - save tts metadata + audio file to mongodb
 router.post('/tts/save', async (req, res, next) => {
   try {
-    const { text, voice_id, voice_name, model_id, audio_data } = req.body;
+    const { text, voice_id, voice_name, model_id, stability, similarity, speed, audio_data } = req.body;
 
     if (!text) {
       return res.status(400).json({ success: false, error: 'text is required' });
@@ -127,6 +153,14 @@ router.post('/tts/save', async (req, res, next) => {
       voice_name: voice_name || 'unknown',
       model: model_id || 'eleven_flash_v2_5',
       file_path: filePath,
+      params: {
+        voice_id,
+        voice_name: voice_name || 'unknown',
+        model_id: model_id || 'eleven_flash_v2_5',
+        stability: stability ?? 0.5,
+        similarity: similarity ?? 0.75,
+        speed: speed ?? 1.0,
+      },
     });
 
     res.json({ success: true, data: asset });
@@ -162,6 +196,28 @@ router.get('/voices', async (req, res, next) => {
     });
 
     res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/audio/history/:id/download - download a specific generation's audio file
+router.get('/history/:id/download', async (req, res, next) => {
+  try {
+    const asset = await AssetAudio.findById(req.params.id).lean();
+    if (!asset || !asset.file_path) {
+      return res.status(404).json({ success: false, error: 'audio not found' });
+    }
+
+    const filePath = path.join(__dirname, '..', '..', asset.file_path);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, error: 'audio file missing from disk' });
+    }
+
+    const filename = `${asset.name.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 40)}.mp3`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'audio/mpeg');
+    fs.createReadStream(filePath).pipe(res);
   } catch (err) {
     next(err);
   }

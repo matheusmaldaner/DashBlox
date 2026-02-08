@@ -18,6 +18,8 @@ const assetAudioSchema = new mongoose.Schema({
   duration_seconds: { type: Number, default: 0 },
   format: { type: String, default: 'mp3' },
   file_path: { type: String, default: '' },
+  variation_files: { type: [String], default: [] },
+  params: { type: mongoose.Schema.Types.Mixed, default: {} },
   roblox_asset_id: { type: Number, default: null },
   created_at: { type: Date, default: Date.now },
 });

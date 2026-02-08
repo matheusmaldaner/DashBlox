@@ -124,6 +124,13 @@ input[type="range"]::-moz-range-thumb {
   transform: translateY(0) scale(0.97);
 }
 
+/* audio generate row - button + status inline */
+.audio-generate-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 /* status text */
 .audio-status {
   font-size: 13px;
@@ -411,41 +418,113 @@ input[type="range"]::-moz-range-thumb {
   font-size: 13px;
 }
 
-/* clickable history items with audio playback */
-.history-item.clickable {
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.history-item.clickable:hover {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-
+/* history item playing state */
 .history-item.playing {
   border-color: var(--accent);
   background: var(--accent-dim);
 }
 
-.history-item-play {
-  width: 28px;
-  height: 28px;
+/* type-specific icon colors */
+.history-item-icon.sfx {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.history-item-icon.tts {
+  background: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
+}
+
+[data-theme="light"] .history-item-icon.tts {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+/* type badge in meta */
+.history-type-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+}
+
+/* history action buttons row */
+.history-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.history-action-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
-  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  padding: 0;
+  font-family: inherit;
 }
 
-.history-item-play svg {
-  width: 16px;
-  height: 16px;
+.history-action-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
-.history-item.clickable:hover .history-item-play {
+.history-action-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+/* play button active state */
+.history-action-btn.history-play-btn.playing {
+  background: var(--accent-dim);
+  border-color: var(--accent);
   color: var(--accent);
 }
 
-.history-item.playing .history-item-play {
+.history-action-btn.history-play-btn:hover {
   color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* download button hover */
+.history-action-btn.history-download-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* reload button hover */
+.history-action-btn.history-reload-btn:hover {
+  color: #8b5cf6;
+  border-color: #8b5cf6;
+}
+
+/* no audio indicator */
+.history-no-audio {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* clickable row hover */
+.history-item:hover {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="light"] .history-item:hover {
+  background: rgba(0, 0, 0, 0.02);
 }

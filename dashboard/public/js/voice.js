@@ -170,13 +170,12 @@
         let audioBase64 = null;
         for (const result of voiceResults) {
           if (result.blob) {
-            const arrayBuffer = await result.blob.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer);
-            let binary = '';
-            for (let j = 0; j < bytes.length; j++) {
-              binary += String.fromCharCode(bytes[j]);
+            try {
+              audioBase64 = await blobToBase64(result.blob);
+            } catch (encErr) {
+              console.warn('voice base64 encoding failed:', encErr);
+              continue;
             }
-            audioBase64 = btoa(binary);
             break;
           }
         }
@@ -186,8 +185,16 @@
           voice_id: voiceId,
           voice_name: voiceName,
           model_id: modelId,
+          stability,
+          similarity,
+          speed,
           audio_data: audioBase64,
         });
+
+        // refresh the shared history list
+        if (typeof window._refreshAudioHistory === 'function') {
+          window._refreshAudioHistory();
+        }
       } catch {
         // save is non-critical
       }
@@ -390,6 +397,23 @@
     }
 
     cloneBtn.disabled = cloneFiles.length === 0;
+  }
+
+  // reliable blob to base64 using FileReader
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result.split(',')[1];
+        if (base64) {
+          resolve(base64);
+        } else {
+          reject(new Error('empty base64 result'));
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
   }
 
   function escapeHtml(str) {
