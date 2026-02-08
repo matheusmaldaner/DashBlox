@@ -260,63 +260,22 @@ local function ProcessPelletHit(
 	local hitPart = result.Instance
 	local hitPlayer = GunDamageProcessor.GetPlayerFromPart(hitPart)
 
-	if not hitPlayer then
-		-- check if pellet hit a zombie
-		local hitModel = hitPart:FindFirstAncestorOfClass("Model")
-		if hitModel and hitModel:GetAttribute("IsZombie") then
-			local distance = (result.Position - origin).Magnitude
-			local isHeadshot = GunDamageProcessor.IsHeadshot(hitPart)
-			local damage = GunUtility.CalculateDamage(gunStats, distance, isHeadshot)
-			damage = GetPaPDamage(player, damage)
+	-- only damage zombies, ignore player hits
+	local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+	if hitModel and hitModel:GetAttribute("IsZombie") then
+		local distance = (result.Position - origin).Magnitude
+		local isHeadshot = GunDamageProcessor.IsHeadshot(hitPart)
+		local damage = GunUtility.CalculateDamage(gunStats, distance, isHeadshot)
+		damage = GetPaPDamage(player, damage)
 
-			local zombieBindable = GetZombieDamageBindable()
-			if zombieBindable then
-				SetZombieCreator(hitModel, player)
-				zombieBindable:Invoke(player, hitModel, damage, isHeadshot, result.Position)
-			end
-		end
-		return nil, 0, false
-	end
-
-	if hitPlayer == player then
-		return nil, 0, false
-	end
-
-	if GunDamageProcessor.ArePlayersOnSameTeam(player, hitPlayer) then
-		return nil, 0, false
-	end
-
-	local hitCharacter = hitPlayer.Character
-	if not hitCharacter then
-		return nil, 0, false
-	end
-
-	local humanoid = hitCharacter:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then
-		return nil, 0, false
-	end
-
-	local distance = (result.Position - origin).Magnitude
-	local isHeadshot = GunDamageProcessor.IsHeadshot(hitPart)
-	local damage = GunUtility.CalculateDamage(gunStats, distance, isHeadshot)
-
-	if playerDamageAccumulator then
-		local existing = playerDamageAccumulator[hitPlayer]
-		if existing then
-			existing.damage = existing.damage + damage
-			if isHeadshot then
-				existing.headshot = true
-			end
-		else
-			playerDamageAccumulator[hitPlayer] = {
-				damage = damage,
-				headshot = isHeadshot,
-				position = result.Position,
-			}
+		local zombieBindable = GetZombieDamageBindable()
+		if zombieBindable then
+			SetZombieCreator(hitModel, player)
+			zombieBindable:Invoke(player, hitModel, damage, isHeadshot, result.Position)
 		end
 	end
 
-	return hitPlayer, damage, isHeadshot
+	return nil, 0, false
 end
 
 --------------------------------------------------
@@ -411,37 +370,19 @@ local function ProcessShot(player: Player, data: any)
 		local hitPart = result.Instance
 		local hitPlayer = GunDamageProcessor.GetPlayerFromPart(hitPart)
 
-		if not hitPlayer then
-			local hitModel = hitPart:FindFirstAncestorOfClass("Model")
-			if hitModel and hitModel:GetAttribute("IsZombie") then
-				local zombieBindable = GetZombieDamageBindable()
-				if zombieBindable then
-					local distance = (result.Position - origin).Magnitude
-					local isHeadshot = GunDamageProcessor.IsHeadshot(hitPart)
-					local damage = GunUtility.CalculateDamage(gunStats, distance, isHeadshot)
-					damage = GetPaPDamage(player, damage)
-					SetZombieCreator(hitModel, player)
-					zombieBindable:Invoke(player, hitModel, damage, isHeadshot, result.Position)
-				end
+		-- only damage zombies, ignore player hits
+		local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+		if hitModel and hitModel:GetAttribute("IsZombie") then
+			local zombieBindable = GetZombieDamageBindable()
+			if zombieBindable then
+				local distance = (result.Position - origin).Magnitude
+				local isHeadshot = GunDamageProcessor.IsHeadshot(hitPart)
+				local damage = GunUtility.CalculateDamage(gunStats, distance, isHeadshot)
+				damage = GetPaPDamage(player, damage)
+				SetZombieCreator(hitModel, player)
+				zombieBindable:Invoke(player, hitModel, damage, isHeadshot, result.Position)
 			end
-			return
 		end
-
-		if hitPlayer == player then return end
-		if GunDamageProcessor.ArePlayersOnSameTeam(player, hitPlayer) then return end
-
-		local hitCharacter = hitPlayer.Character
-		if not hitCharacter then return end
-		local humanoid = hitCharacter:FindFirstChildOfClass("Humanoid")
-		if not humanoid or humanoid.Health <= 0 then return end
-
-		local distance = (result.Position - origin).Magnitude
-		local isHeadshot = GunDamageProcessor.IsHeadshot(hitPart)
-		local damage = GunUtility.CalculateDamage(gunStats, distance, isHeadshot)
-
-		GunDamageProcessor.ApplyDamageToPlayer(
-			player, hitPlayer, damage, isHeadshot, result.Position, gunName
-		)
 	end
 end
 
