@@ -3,7 +3,7 @@
 -- startup cleanup and collision group setup:
 -- 1. Barrier/Zombie collision groups (zombies pass through, players don't)
 -- 2. ForceField-material parts → invisible barrier walls
--- 3. "Decoration" tagged parts → anchored, non-interactive props
+-- 3. "Decoration" tagged parts → anchored, non-interactive (purely visual)
 
 local PhysicsService = game:GetService("PhysicsService")
 local CollectionService = game:GetService("CollectionService")
@@ -20,7 +20,7 @@ PhysicsService:RegisterCollisionGroup("Decoration")
 PhysicsService:CollisionGroupSetCollidable("Barrier", "Zombie", false)
 PhysicsService:CollisionGroupSetCollidable("Barrier", "Default", true)
 
--- decoration doesn't collide with or trigger touch on players
+-- decoration doesn't collide with players or zombies
 PhysicsService:CollisionGroupSetCollidable("Decoration", "Default", false)
 PhysicsService:CollisionGroupSetCollidable("Decoration", "Zombie", false)
 
@@ -41,6 +41,7 @@ end
 
 --------------------------------------------------
 -- Decoration: tagged parts become non-interactive
+-- (use "Trash" tag instead for pickable items)
 --------------------------------------------------
 
 local function SetupDecoration(instance: Instance)
@@ -61,10 +62,8 @@ local function SetupDecoration(instance: Instance)
 	end
 end
 
--- apply to all currently tagged items
 for _, instance in CollectionService:GetTagged("Decoration") do
 	SetupDecoration(instance)
 end
 
--- handle items tagged at runtime (e.g. streamed in)
 CollectionService:GetInstanceAddedSignal("Decoration"):Connect(SetupDecoration)
