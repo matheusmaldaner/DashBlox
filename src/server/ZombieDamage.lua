@@ -106,6 +106,20 @@ function ZombieDamage.ApplyDamage(
 	humanoid:TakeDamage(damage)
 	local remainingHealth = humanoid.Health
 
+	-- update healthbar
+	local healthbarGui = zombieModel:FindFirstChild("HealthbarGui") :: BillboardGui?
+	if healthbarGui then
+		local maxHP = healthbarGui:GetAttribute("MaxHealth") or humanoid.MaxHealth
+		local ratio = math.clamp(remainingHealth / maxHP, 0, 1)
+		local bg = healthbarGui:FindFirstChild("Background")
+		if bg then
+			local fill = bg:FindFirstChild("Fill") :: Frame?
+			if fill then
+				fill.Size = UDim2.new(ratio, 0, 1, 0)
+			end
+		end
+	end
+
 	-- send hit confirmation to attacker (reuses existing gun hit marker system)
 	if GunHitRemote then
 		(GunHitRemote :: RemoteEvent):FireClient(attacker, {

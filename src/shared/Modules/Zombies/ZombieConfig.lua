@@ -143,6 +143,27 @@ ZombieConfig.TypeUnlockRounds = {
 }
 
 --------------------------------------------------
+-- Model Name Mapping (ReplicatedStorage.Assets.Zombies)
+--------------------------------------------------
+
+ZombieConfig.ModelName = {
+	["Normal"] = "Zombie Normal",
+	["Fast"] = "Zombie Normal",
+	["Tank"] = "Zombie Tanky",
+	["Exploder"] = "Zombie Normal",
+	["Boss"] = "Zombie Boss",
+}
+
+--------------------------------------------------
+-- Animation IDs
+--------------------------------------------------
+
+ZombieConfig.Animations = {
+	Walk = "rbxassetid://108715237394774",
+	Attack = "rbxassetid://104172404325800",
+}
+
+--------------------------------------------------
 -- Constants
 --------------------------------------------------
 

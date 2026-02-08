@@ -330,7 +330,8 @@ local function SetupTouchDamage(zombieData: ZombieData)
 	end
 
 	local PlayerDamagedRemote = RemoteService.GetRemote("PlayerDamaged") :: RemoteEvent
-	local torso = zombieData.model:FindFirstChild("Torso") :: BasePart?
+	-- support both R6 (Torso) and R15 (UpperTorso) rigs
+	local torso = (zombieData.model:FindFirstChild("Torso") or zombieData.model:FindFirstChild("UpperTorso")) :: BasePart?
 	if not torso then
 		return
 	end
@@ -364,6 +365,17 @@ local function SetupTouchDamage(zombieData: ZombieData)
 		end
 
 		playerHumanoid:TakeDamage(stats.Damage)
+
+		-- play attack animation
+		local attackAnimObj = zombieData.model:FindFirstChild("ZombieAttackAnim")
+		if attackAnimObj and attackAnimObj:IsA("Animation") then
+			local animator = zombieData.humanoid:FindFirstChildOfClass("Animator")
+			if animator then
+				local track = animator:LoadAnimation(attackAnimObj)
+				track.Priority = Enum.AnimationPriority.Action
+				track:Play()
+			end
+		end
 
 		-- notify the player they took damage
 		PlayerDamagedRemote:FireClient(player, {

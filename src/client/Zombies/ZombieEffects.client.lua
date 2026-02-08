@@ -38,6 +38,12 @@ local function DissolveZombie(zombieModel: Model, exploded: boolean)
 		Enum.EasingDirection.In
 	)
 
+	-- hide healthbar immediately on death
+	local healthbarGui = zombieModel:FindFirstChild("HealthbarGui")
+	if healthbarGui and healthbarGui:IsA("BillboardGui") then
+		healthbarGui.Enabled = false
+	end
+
 	for _, descendant in zombieModel:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			-- shrink and fade
