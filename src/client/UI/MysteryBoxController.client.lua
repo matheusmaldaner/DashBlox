@@ -165,7 +165,7 @@ local function ShowTeddyBear(boxModel: Model)
 end
 
 local function StopCyclingAnimation()
-	if cyclingGui then
+	if cyclingGui then;
 		(cyclingGui :: BillboardGui):Destroy()
 		cyclingGui = nil
 		cyclingLabel = nil
@@ -222,7 +222,7 @@ local function ShowResult(boxModel: Model, gunName: string, rarity: string, isDu
 end
 
 local function HideResult()
-	if resultGui then
+	if resultGui then;
 		(resultGui :: BillboardGui):Destroy()
 		resultGui = nil
 	end
@@ -276,7 +276,7 @@ local function CreateLightBeam(position: Vector3)
 end
 
 local function DestroyLightBeam()
-	if lightBeamPart then
+	if lightBeamPart then;
 		(lightBeamPart :: Part):Destroy()
 		lightBeamPart = nil
 	end

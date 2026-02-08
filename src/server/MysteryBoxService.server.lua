@@ -215,7 +215,7 @@ local function MoveBoxToLocation(locationIndex: number)
 	end
 
 	-- position above the location part
-	local targetCF = location.CFrame + Vector3.new(0, 2, 0)
+	local targetCF = location.CFrame + Vector3.new(0, 2, 0);
 	(boxModel :: Model):PivotTo(targetCF)
 	activeLocationIndex = locationIndex
 	usesAtCurrentLocation = 0
@@ -258,7 +258,7 @@ local function OnBoxTriggered(player: Player)
 	usesAtCurrentLocation += 1
 
 	-- disable prompt while in use
-	if boxPrompt then
+	if boxPrompt then;
 		(boxPrompt :: ProximityPrompt).Enabled = false
 	end
 
@@ -286,7 +286,7 @@ local function OnBoxTriggered(player: Player)
 		isBoxRelocating = true
 
 		-- hide box
-		if boxModel then
+		if boxModel then;
 			(boxModel :: Model):PivotTo(CFrame.new(0, -1000, 0))
 		end
 
@@ -304,7 +304,7 @@ local function OnBoxTriggered(player: Player)
 		isBoxRelocating = false
 		isBoxInUse = false
 
-		if boxPrompt then
+		if boxPrompt then;
 			(boxPrompt :: ProximityPrompt).Enabled = true
 		end
 
@@ -384,7 +384,7 @@ local function OnBoxTriggered(player: Player)
 		-- cooldown then re-enable
 		task.wait(MysteryBoxConfig.CooldownAfterUse)
 		isBoxInUse = false
-		if boxPrompt then
+		if boxPrompt then;
 			(boxPrompt :: ProximityPrompt).Enabled = true
 		end
 	end)
@@ -408,7 +408,7 @@ local function OnBoxTriggered(player: Player)
 
 			task.wait(MysteryBoxConfig.CooldownAfterUse)
 			isBoxInUse = false
-			if boxPrompt then
+			if boxPrompt then;
 				(boxPrompt :: ProximityPrompt).Enabled = true
 			end
 		end
@@ -430,7 +430,7 @@ local function Initialize()
 	end
 
 	-- connect proximity prompt
-	if boxPrompt then
+	if boxPrompt then;
 		(boxPrompt :: ProximityPrompt).Triggered:Connect(OnBoxTriggered)
 	end
 
@@ -442,7 +442,7 @@ local function Initialize()
 			if boxModel and #boxLocations > 0 then
 				MoveBoxToLocation(activeLocationIndex)
 			end
-			if boxPrompt then
+			if boxPrompt then;
 				(boxPrompt :: ProximityPrompt).Triggered:Connect(OnBoxTriggered)
 			end
 		end
