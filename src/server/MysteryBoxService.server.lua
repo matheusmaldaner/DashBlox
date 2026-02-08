@@ -31,7 +31,7 @@ local GiveLoadoutRemote = RemoteService.GetRemote("GiveLoadout") :: RemoteEvent
 --------------------------------------------------
 
 -- box locations (tagged parts in workspace)
-local boxLocations: { BasePart } = {}
+local boxLocations: { Instance } = {} -- can be BasePart or Model
 local activeLocationIndex: number = 1
 
 -- the physical box model
@@ -55,7 +55,6 @@ local pendingPickup: {
 -- Weapon Selection
 --------------------------------------------------
 
--- weighted random from the weapon pool
 local function PickRandomWeapon(): (string, string)
 	local pool = MysteryBoxConfig.WeaponPool
 	local totalWeight = 0
@@ -76,7 +75,6 @@ local function PickRandomWeapon(): (string, string)
 	return pool[1].gunName, pool[1].rarity
 end
 
--- check if player already owns this weapon (has it in backpack or character)
 local function PlayerOwnsWeapon(player: Player, gunName: string): boolean
 	local backpack = player:FindFirstChild("Backpack")
 	if backpack then
@@ -87,7 +85,6 @@ local function PlayerOwnsWeapon(player: Player, gunName: string): boolean
 		end
 	end
 
-	-- also check currently equipped (in character)
 	local character = player.Character
 	if character then
 		for _, tool in character:GetChildren() do
@@ -100,7 +97,6 @@ local function PlayerOwnsWeapon(player: Player, gunName: string): boolean
 	return false
 end
 
--- check teddy bear chance
 local function ShouldTeddyBear(): boolean
 	local chance = MysteryBoxConfig.TeddyBearBaseChance
 		+ (usesAtCurrentLocation * MysteryBoxConfig.TeddyBearChancePerUse)
@@ -112,11 +108,9 @@ end
 -- Give Weapon / Refill Ammo
 --------------------------------------------------
 
--- gives a new weapon to the player or refills ammo if duplicate
 local function GiveWeaponOrRefill(player: Player, gunName: string, isDuplicate: boolean)
 	if isDuplicate then
-		-- refill ammo via bindable (GunServer tracks ammo)
-		local reloadBindable = ServerScriptService:FindFirstChild("RefillAmmoBindable") :: BindableFunction?
+			local reloadBindable = ServerScriptService:FindFirstChild("RefillAmmoBindable") :: BindableFunction?
 		if reloadBindable then
 			pcall(function()
 				reloadBindable:Invoke(player, gunName)
@@ -125,13 +119,11 @@ local function GiveWeaponOrRefill(player: Player, gunName: string, isDuplicate: 
 		return
 	end
 
-	-- find next available slot
 	local backpack = player:FindFirstChild("Backpack")
 	if not backpack then
 		return
 	end
 
-	-- count existing gun tools to determine slot index
 	local slotIndex = 1
 	for _, tool in backpack:GetChildren() do
 		if tool:IsA("Tool") and tool:GetAttribute("SlotIndex") then
@@ -142,7 +134,6 @@ local function GiveWeaponOrRefill(player: Player, gunName: string, isDuplicate: 
 		end
 	end
 
-	-- also check character for equipped tool
 	local character = player.Character
 	if character then
 		for _, tool in character:GetChildren() do
@@ -155,7 +146,6 @@ local function GiveWeaponOrRefill(player: Player, gunName: string, isDuplicate: 
 		end
 	end
 
-	-- create the weapon tool (same pattern as GunServer.CreateWeaponTool)
 	local gunStats = GunConfig.Guns[gunName]
 	if not gunStats then
 		return
@@ -183,24 +173,58 @@ end
 
 local function DiscoverBoxModel()
 	local boxes = CollectionService:GetTagged("MysteryBox")
-	if #boxes > 0 then
-		boxModel = boxes[1] :: Model
-		-- find or create ProximityPrompt
-		boxPrompt = boxModel:FindFirstChildOfClass("ProximityPrompt")
-		if not boxPrompt then
-			boxPrompt = Instance.new("ProximityPrompt")
-			local prompt = boxPrompt :: ProximityPrompt
-			prompt.ObjectText = MysteryBoxConfig.BoxPromptText
-			prompt.ActionText = MysteryBoxConfig.BoxActionText
-				.. " [" .. tostring(MysteryBoxConfig.Cost) .. "]"
-			prompt.MaxActivationDistance = MysteryBoxConfig.BoxMaxDistance
-			prompt.HoldDuration = 0
-			prompt.RequiresLineOfSight = false
-			prompt.Parent = boxModel
-		end
-	else
-		warn("[MysteryBox] no model tagged 'MysteryBox' found")
+	if #boxes == 0 then
+		warn("[MysteryBox] no instance tagged 'MysteryBox' found")
+		return
 	end
+
+	local tagged = boxes[1]
+	print("[MysteryBox] found tagged instance:", tagged.Name, "class:", tagged.ClassName)
+
+	-- wrap single BasePart in a pseudo-model reference
+	if tagged:IsA("Model") then
+		boxModel = tagged :: Model
+	elseif tagged:IsA("BasePart") then
+		-- tagged instance is a Part, not a Model - still usable
+		boxModel = tagged :: any
+	else
+		warn("[MysteryBox] tagged instance is not a Model or BasePart:", tagged.ClassName)
+		return
+	end
+
+	-- find existing ProximityPrompt anywhere in the box
+	boxPrompt = tagged:FindFirstChildWhichIsA("ProximityPrompt", true)
+
+	if boxPrompt then
+		print("[MysteryBox] found existing ProximityPrompt in", boxPrompt.Parent.Name)
+		return
+	end
+
+	-- determine where to parent the new prompt (must be a BasePart)
+	local promptParent: BasePart? = nil
+	if tagged:IsA("BasePart") then
+		promptParent = tagged :: BasePart
+	elseif tagged:IsA("Model") then
+		promptParent = (tagged :: Model).PrimaryPart
+			or tagged:FindFirstChildWhichIsA("BasePart")
+	end
+
+	if not promptParent then
+		warn("[MysteryBox] cannot find BasePart for ProximityPrompt")
+		return
+	end
+
+	print("[MysteryBox] creating ProximityPrompt on", promptParent.Name)
+
+	boxPrompt = Instance.new("ProximityPrompt")
+	local prompt = boxPrompt :: ProximityPrompt
+	prompt.ObjectText = MysteryBoxConfig.BoxPromptText
+	prompt.ActionText = MysteryBoxConfig.BoxActionText
+		.. " [" .. tostring(MysteryBoxConfig.Cost) .. "]"
+	prompt.MaxActivationDistance = MysteryBoxConfig.BoxMaxDistance
+	prompt.HoldDuration = 0
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = promptParent
 end
 
 -- move the box model to a specific location
@@ -214,8 +238,14 @@ local function MoveBoxToLocation(locationIndex: number)
 		return
 	end
 
-	-- position above the location part
-	local targetCF = location.CFrame + Vector3.new(0, 2, 0);
+	-- position above the location (works for both Models and BaseParts)
+	local locationCF: CFrame
+	if location:IsA("Model") then
+		locationCF = location:GetPivot()
+	else
+		locationCF = (location :: BasePart).CFrame
+	end
+	local targetCF = locationCF + Vector3.new(0, 2, 0);
 	(boxModel :: Model):PivotTo(targetCF)
 	activeLocationIndex = locationIndex
 	usesAtCurrentLocation = 0
@@ -239,20 +269,29 @@ end
 --------------------------------------------------
 
 local function OnBoxTriggered(player: Player)
+	print("[MysteryBox] triggered by", player.Name)
+
 	-- guards
 	if isBoxInUse or isBoxRelocating then
+		warn("[MysteryBox] box is busy (inUse:", isBoxInUse, "relocating:", isBoxRelocating, ")")
 		return
 	end
 	if not boxModel then
+		warn("[MysteryBox] no box model found")
 		return
 	end
 
 	-- check coins
 	local cost = MysteryBoxConfig.Cost
+	local playerCoins = CoinUtility.GetCoins(player)
+	print("[MysteryBox]", player.Name, "has", playerCoins, "coins, cost is", cost)
+
 	if not CoinUtility.Deduct(player, cost) then
-		-- not enough coins, could send feedback
+		warn("[MysteryBox] not enough coins")
 		return
 	end
+
+	print("[MysteryBox] coins deducted, starting roll")
 
 	isBoxInUse = true
 	usesAtCurrentLocation += 1
@@ -276,29 +315,29 @@ local function OnBoxTriggered(player: Player)
 			isTeddyBear = true,
 		})
 
-		-- wait for cycling animation to show teddy bear
 		task.wait(MysteryBoxConfig.CyclingDuration)
 
-		-- relocate
 		MysteryBoxRelocateRemote:FireAllClients({
 			oldPosition = boxModel and (boxModel :: Model):GetPivot().Position or Vector3.zero,
 		})
 
 		isBoxRelocating = true
 
-		-- hide box
 		if boxModel then
 			local model = boxModel :: Model
 			model:PivotTo(CFrame.new(0, -1000, 0))
 		end
 
-		-- delay, then reappear at new location
 		task.wait(MysteryBoxConfig.RelocateDelay)
 
 		local newLocation = PickNewLocation()
 		MoveBoxToLocation(newLocation)
 
-		local newPosition = boxLocations[newLocation] and boxLocations[newLocation].Position or Vector3.zero
+		local loc = boxLocations[newLocation]
+		local newPosition = Vector3.zero
+		if loc then
+			newPosition = if loc:IsA("Model") then loc:GetPivot().Position else (loc :: BasePart).Position
+		end
 		MysteryBoxReappearRemote:FireAllClients({
 			position = newPosition,
 		})
@@ -369,7 +408,6 @@ local function OnBoxTriggered(player: Player)
 			return
 		end
 
-		-- give weapon or refill ammo
 		GiveWeaponOrRefill(pickupPlayer, pendingPickup.gunName, pendingPickup.isDuplicate)
 
 		MysteryBoxPickedUpRemote:FireAllClients({
@@ -425,19 +463,28 @@ end
 --------------------------------------------------
 
 local function Initialize()
+	print("[MysteryBox] initializing...")
 	DiscoverLocations()
+	print("[MysteryBox] found", #boxLocations, "locations")
 	DiscoverBoxModel()
+	print("[MysteryBox] boxModel:", boxModel ~= nil, "boxPrompt:", boxPrompt ~= nil)
 
 	-- move box to first location
 	if boxModel and #boxLocations > 0 then
 		activeLocationIndex = math.random(1, #boxLocations)
 		MoveBoxToLocation(activeLocationIndex)
+		print("[MysteryBox] moved to location", activeLocationIndex)
+	else
+		warn("[MysteryBox] cannot place box: model=", boxModel ~= nil, "locations=", #boxLocations)
 	end
 
 	-- connect proximity prompt
 	if boxPrompt then
 		local prompt = boxPrompt :: ProximityPrompt
 		prompt.Triggered:Connect(OnBoxTriggered)
+		print("[MysteryBox] prompt connected, ready for interaction")
+	else
+		warn("[MysteryBox] no prompt to connect!")
 	end
 
 	-- also watch for box model being added later (rojo sync)

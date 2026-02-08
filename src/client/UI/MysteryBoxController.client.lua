@@ -36,6 +36,10 @@ local lightBeamPart: Part? = nil
 local cyclingVFXBeam: Part? = nil
 local cyclingVFXParticles: Part? = nil
 
+-- forward declarations (these functions reference each other)
+local StopCyclingAnimation: () -> ()
+local DestroyLightBeam: () -> ()
+
 --------------------------------------------------
 -- Helpers
 --------------------------------------------------
@@ -307,7 +311,7 @@ local function ShowTeddyBear(boxModel: Model)
 	end)
 end
 
-local function StopCyclingAnimation()
+StopCyclingAnimation = function()
 	if cyclingGui then
 		local gui = cyclingGui :: BillboardGui
 		gui:Destroy()
@@ -421,7 +425,7 @@ local function CreateLightBeam(position: Vector3)
 	end)
 end
 
-local function DestroyLightBeam()
+DestroyLightBeam = function()
 	if lightBeamPart then
 		local beam = lightBeamPart :: Part
 		beam:Destroy()

@@ -9,7 +9,7 @@ local MysteryBoxConfig = {}
 -- Costs
 --------------------------------------------------
 
-MysteryBoxConfig.Cost = 950
+MysteryBoxConfig.Cost = 0 -- TODO: restore to 950 after testing
 MysteryBoxConfig.FireSaleCost = 10
 
 --------------------------------------------------

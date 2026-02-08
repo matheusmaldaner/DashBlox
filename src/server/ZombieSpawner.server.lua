@@ -276,6 +276,15 @@ local function GetRandomSpawnPoint(): CFrame
 end
 
 --------------------------------------------------
+-- Forward Declarations
+-- (SpawnZombie -> OnZombieDied -> EndRound call chain requires these)
+--------------------------------------------------
+
+local OnZombieDied: (model: Model, zombieType: string) -> ()
+local EndRound: () -> ()
+local StartRound: (round: number) -> ()
+
+--------------------------------------------------
 -- Spawn Single Zombie
 --------------------------------------------------
 
@@ -332,7 +341,7 @@ end
 -- Wave Lifecycle
 --------------------------------------------------
 
-local function OnZombieDied(model: Model, zombieType: string)
+OnZombieDied = function(model: Model, zombieType: string)
 	-- stop AI
 	local zombieData = activeZombies[model]
 	if zombieData then
@@ -353,7 +362,7 @@ local function OnZombieDied(model: Model, zombieType: string)
 	end
 end
 
-local function EndRound()
+EndRound = function()
 	waveState.isActive = false
 	waveState.restPhase = true
 	local round = waveState.round
@@ -376,7 +385,7 @@ local function EndRound()
 	end)
 end
 
-local function StartRound(round: number)
+StartRound = function(round: number)
 	-- refresh spawn points in case new ones were added
 	DiscoverSpawnPoints()
 

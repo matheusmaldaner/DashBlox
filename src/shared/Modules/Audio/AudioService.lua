@@ -565,12 +565,23 @@ function AudioService.PlayZombieDeath(position: Vector3, zombieType: string?): S
 		position,
 		AudioConfig.DefaultVolumes.Zombies * 1.2, -- deaths are slightly louder
 		range,
-		true
+		false -- we apply custom pitch below
 	)
 
-	-- pitch down boss death for a deeper growl
-	if sound and zombieType == "Boss" then
-		sound.PlaybackSpeed = 0.7
+	-- apply type-specific pitch to differentiate sounds
+	if sound then
+		if zombieType == "Boss" then
+			sound.PlaybackSpeed = 0.55 -- very deep for boss
+		elseif zombieType == "Exploder" then
+			sound.PlaybackSpeed = 1.3 -- higher pitch for explosive feel
+		elseif zombieType == "Fast" then
+			sound.PlaybackSpeed = 1.15 -- slightly higher for fast zombies
+		elseif zombieType == "Tank" then
+			sound.PlaybackSpeed = 0.75 -- deeper for tanks
+		else
+			-- normal zombie: slight random variation
+			sound.PlaybackSpeed = 0.85 + math.random() * 0.2
+		end
 	end
 
 	return sound

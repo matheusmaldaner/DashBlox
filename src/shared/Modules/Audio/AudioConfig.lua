@@ -81,7 +81,7 @@ AudioConfig.Building = {
 	},
 	-- Destroy sounds by material
 	destroy = {
-		Wood = "rbxassetid://3398628813", -- wood splintering
+		Wood = "rbxassetid://9064974448", -- wood splintering
 		Stone = "rbxassetid://9064853890", -- stone crumbling
 		Metal = "rbxassetid://9064974448", -- metal clanging
 	},
@@ -128,8 +128,8 @@ AudioConfig.Movement = {
 AudioConfig.Combat = {
 	hitMarker = "rbxassetid://5952120301", -- COD Hit Marker sound
 	headshot = "rbxassetid://1129547534", -- MLG Hitmarker (distinct for headshot)
-	kill = "rbxassetid://1507116849", -- Victory Sound Effect
-	shieldBreak = "rbxassetid://3398628813", -- Breaking/shatter sound
+	kill = "rbxassetid://9118823805", -- Victory Sound Effect
+	shieldBreak = "rbxassetid://9064974448", -- Breaking/shatter sound
 	shieldHit = "rbxassetid://876939830", -- Shield absorb
 	lowHealthHeartbeat = "rbxassetid://6724333590", -- Heartbeat Sound (Slow to fast)
 	damaged = "rbxassetid://3626698892", -- Impact thud
@@ -143,14 +143,16 @@ AudioConfig.Combat = {
 
 AudioConfig.Zombies = {
 	-- hit feedback (3D at zombie position)
-	hitFlesh = "rbxassetid://3626698892", -- meaty flesh impact thud
-	hitFleshAlt = "rbxassetid://9064853890", -- alternate impact for variation
-	hitHeadshot = "rbxassetid://3398628813", -- bone crack/crunch on headshot
+	-- TODO: upload dedicated flesh/bone sounds and replace these IDs
+	hitFlesh = "rbxassetid://3626698892", -- impact thud (reused from Combat.damaged)
+	hitFleshAlt = "rbxassetid://507863457", -- wood impact (pitch varied for meaty feel)
+	hitHeadshot = "rbxassetid://9064974448", -- metallic crack (pitch varied for bone snap)
 
 	-- death sounds (3D at zombie position)
-	deathGroan = "rbxassetid://1843977518", -- zombie groan/moan
-	deathExploder = "rbxassetid://262562442", -- explosive death burst
-	deathBoss = "rbxassetid://1843977518", -- deeper groan (pitched down via AudioService)
+	-- TODO: upload dedicated zombie groan/death sounds and replace these IDs
+	deathGroan = "rbxassetid://3626698892", -- deep thud (pitched down in AudioService)
+	deathExploder = "rbxassetid://3626698892", -- impact (pitched up for explosive feel)
+	deathBoss = "rbxassetid://3626698892", -- deep thud (pitched very low in AudioService)
 
 	-- headshot celebration (local, non-positional)
 	headshotConfirm = "rbxassetid://1129547534", -- crisp ping for headshot kill
@@ -164,13 +166,13 @@ AudioConfig.UI = {
 	click = "rbxassetid://876939830",
 	hover = "rbxassetid://876939830",
 	queueStart = "rbxassetid://876939830",
-	matchFound = "rbxassetid://1507116849", -- Victory fanfare for match found
+	matchFound = "rbxassetid://9118823805", -- Victory fanfare for match found
 	countdown = "rbxassetid://172905765", -- Short Beep - Heart rate Monitor
-	roundStart = "rbxassetid://1507116849", -- Fanfare
-	victory = "rbxassetid://1507116849", -- Victory Sound Effect
+	roundStart = "rbxassetid://9118823805", -- Fanfare
+	victory = "rbxassetid://9118823805", -- Victory Sound Effect
 	defeat = "rbxassetid://876939830", -- Subdued click
-	levelUp = "rbxassetid://1507116849", -- Celebration sound
-	achievementUnlock = "rbxassetid://1507116849", -- Achievement jingle
+	levelUp = "rbxassetid://9118823805", -- Celebration sound
+	achievementUnlock = "rbxassetid://9118823805", -- Achievement jingle
 	notification = "rbxassetid://876939830", -- Notification pop
 }
 
@@ -183,7 +185,7 @@ AudioConfig.Pickaxe = {
 	hitWood = "rbxassetid://507863457", -- Wood hit
 	hitStone = "rbxassetid://507863457", -- Stone hit
 	hitMetal = "rbxassetid://507863457", -- Metal hit
-	critical = "rbxassetid://3398628813", -- Critical hit impact
+	critical = "rbxassetid://9064974448", -- Critical hit impact
 	equip = "rbxassetid://876939830", -- Equip click
 }
 
@@ -194,7 +196,7 @@ AudioConfig.Pickaxe = {
 AudioConfig.Announcer = {
 	-- Kill streak sounds (Halo/CoD style)
 	firstBlood = "rbxassetid://9118823805", -- First kill of the match
-	elimination = "rbxassetid://1507116849", -- Standard kill notification
+	elimination = "rbxassetid://9118823805", -- Standard kill notification
 	headshot = "rbxassetid://1129547534", -- Headshot kill (crisp ping)
 	doubleKill = "rbxassetid://9118823805", -- 2 kills quickly
 	tripleKill = "rbxassetid://9118823805", -- 3 kills quickly
@@ -204,7 +206,7 @@ AudioConfig.Announcer = {
 	matchStart = "rbxassetid://172905765", -- Match beginning
 	roundStart = "rbxassetid://172905765", -- Round starting beep
 	overtime = "rbxassetid://6724333590", -- Overtime warning (tense)
-	victory = "rbxassetid://1507116849", -- You won
+	victory = "rbxassetid://9118823805", -- You won
 	defeat = "rbxassetid://876939830", -- You lost
 }
 
