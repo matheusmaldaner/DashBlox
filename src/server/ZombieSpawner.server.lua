@@ -109,6 +109,7 @@ local function CreateZombieModel(zombieType: string): Model
 		part.Size = def.size * scale
 		part.Anchored = false
 		part.CanCollide = (def.name == "Torso" or def.name == "Head")
+		part.CollisionGroup = "Zombie"
 		part.Material = Enum.Material.SmoothPlastic
 
 		-- color: head + torso use primary, limbs use secondary
@@ -156,6 +157,7 @@ local function CreateZombieModel(zombieType: string): Model
 	rootPart.Size = Vector3.new(2, 2, 1) * scale
 	rootPart.Transparency = 1
 	rootPart.CanCollide = false
+	rootPart.CollisionGroup = "Zombie"
 	rootPart.Anchored = false
 	rootPart.Parent = model
 
