@@ -211,6 +211,11 @@ local function CachePlayerPositions()
 			continue
 		end
 
+		-- skip downed players (invulnerable, zombies ignore them)
+		if player:GetAttribute("IsDowned") then
+			continue
+		end
+
 		local rootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if not rootPart then
 			continue
@@ -330,7 +335,8 @@ local function SetupTouchDamage(zombieData: ZombieData)
 	end
 
 	local PlayerDamagedRemote = RemoteService.GetRemote("PlayerDamaged") :: RemoteEvent
-	local torso = zombieData.model:FindFirstChild("Torso") :: BasePart?
+	-- support both R6 (Torso) and R15 (UpperTorso) rigs
+	local torso = (zombieData.model:FindFirstChild("Torso") or zombieData.model:FindFirstChild("UpperTorso")) :: BasePart?
 	if not torso then
 		return
 	end
@@ -342,6 +348,11 @@ local function SetupTouchDamage(zombieData: ZombieData)
 
 		local player = GetPlayerFromPart(hit)
 		if not player then
+			return
+		end
+
+		-- skip downed players (invulnerable while downed)
+		if player:GetAttribute("IsDowned") then
 			return
 		end
 
@@ -364,6 +375,17 @@ local function SetupTouchDamage(zombieData: ZombieData)
 		end
 
 		playerHumanoid:TakeDamage(stats.Damage)
+
+		-- play attack animation
+		local attackAnimObj = zombieData.model:FindFirstChild("ZombieAttackAnim")
+		if attackAnimObj and attackAnimObj:IsA("Animation") then
+			local animator = zombieData.humanoid:FindFirstChildOfClass("Animator")
+			if animator then
+				local track = animator:LoadAnimation(attackAnimObj)
+				track.Priority = Enum.AnimationPriority.Action
+				track:Play()
+			end
+		end
 
 		-- notify the player they took damage
 		PlayerDamagedRemote:FireClient(player, {

@@ -127,7 +127,7 @@ AudioConfig.Movement = {
 
 AudioConfig.Combat = {
 	hitMarker = "rbxassetid://5952120301", -- COD Hit Marker sound
-	headshot = "rbxassetid://1129547534", -- MLG Hitmarker (distinct for headshot)
+	headshot = "rbxassetid://5952120301", -- same as hit marker (no jarring extra sound)
 	kill = "rbxassetid://5952120301", -- kill confirm (reused hit marker)
 	shieldBreak = "rbxassetid://9064974448", -- Breaking/shatter sound
 	shieldHit = "rbxassetid://876939830", -- Shield absorb
@@ -146,7 +146,7 @@ AudioConfig.Zombies = {
 	-- TODO: upload dedicated flesh/bone sounds and replace these IDs
 	hitFlesh = "rbxassetid://3626698892", -- impact thud (reused from Combat.damaged)
 	hitFleshAlt = "rbxassetid://507863457", -- wood impact (pitch varied for meaty feel)
-	hitHeadshot = "rbxassetid://9064974448", -- metallic crack (pitch varied for bone snap)
+	hitHeadshot = "rbxassetid://3626698892", -- deep thud (same as flesh hit, pitched up by AudioService)
 
 	-- death sounds (3D at zombie position)
 	-- TODO: upload dedicated zombie groan/death sounds and replace these IDs

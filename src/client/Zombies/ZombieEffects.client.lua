@@ -1,6 +1,6 @@
 --!strict
 
--- client-side zombie visual effects: dissolve death, explosion particles,
+-- client-side zombie visual effects: ragdoll fade-out, explosion particles,
 -- floating damage numbers
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,53 +18,25 @@ local ZombieDiedRemote = RemoteService.GetRemote("ZombieDied") :: RemoteEvent
 local ZombieSpawnedRemote = RemoteService.GetRemote("ZombieSpawned") :: RemoteEvent
 
 --------------------------------------------------
--- Dissolve Effect
+-- Ragdoll Death Effect
 --------------------------------------------------
 
--- shrinks and fades all parts of a zombie model over time
-local function DissolveZombie(zombieModel: Model, exploded: boolean)
+-- after ragdoll settles, fades all parts to transparent before pool cleanup
+local function RagdollFadeZombie(zombieModel: Model, exploded: boolean)
 	if not zombieModel or not zombieModel.Parent then
 		return
 	end
 
-	local dissolveTime = ZombieConfig.DissolveTime
-	if exploded then
-		dissolveTime = 0.5
+	-- hide healthbar immediately on death
+	local healthbarGui = zombieModel:FindFirstChild("HealthbarGui")
+	if healthbarGui and healthbarGui:IsA("BillboardGui") then
+		healthbarGui.Enabled = false
 	end
 
-	local tweenInfo = TweenInfo.new(
-		dissolveTime,
-		Enum.EasingStyle.Quad,
-		Enum.EasingDirection.In
-	)
-
-	for _, descendant in zombieModel:GetDescendants() do
-		if descendant:IsA("BasePart") then
-			-- shrink and fade
-			local sizeTween = TweenService:Create(descendant, tweenInfo, {
-				Size = descendant.Size * 0.01,
-				Transparency = 1,
-			})
-			sizeTween:Play()
-
-			-- darken color during dissolve
-			local colorTween = TweenService:Create(descendant, tweenInfo, {
-				Color = Color3.fromRGB(20, 20, 20),
-			})
-			colorTween:Play()
-		elseif descendant:IsA("Decal") then
-			-- fade decals too
-			local decalTween = TweenService:Create(descendant, tweenInfo, {
-				Transparency = 1,
-			})
-			decalTween:Play()
-		elseif descendant:IsA("PointLight") then
-			-- dim lights
-			local lightTween = TweenService:Create(descendant, tweenInfo, {
-				Brightness = 0,
-			})
-			lightTween:Play()
-		end
+	-- hide highlight immediately so the red outline doesn't persist on the ragdoll
+	local highlight = zombieModel:FindFirstChildOfClass("Highlight")
+	if highlight then
+		highlight.Enabled = false
 	end
 
 	-- spawn explosion particles if exploder
@@ -74,6 +46,44 @@ local function DissolveZombie(zombieModel: Model, exploded: boolean)
 			else Vector3.zero
 		if position ~= Vector3.zero then
 			CreateExplosionEffect(position)
+		end
+	end
+
+	-- wait for ragdoll to settle before fading
+	local ragdollTime = ZombieConfig.RagdollTime
+	if exploded then
+		ragdollTime = 0.5
+	end
+	task.wait(ragdollTime)
+
+	-- fade out all parts (no shrinking, just transparency)
+	local fadeTime = ZombieConfig.FadeOutTime
+	local tweenInfo = TweenInfo.new(
+		fadeTime,
+		Enum.EasingStyle.Quad,
+		Enum.EasingDirection.In
+	)
+
+	if not zombieModel or not zombieModel.Parent then
+		return
+	end
+
+	for _, descendant in zombieModel:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			local fadeTween = TweenService:Create(descendant, tweenInfo, {
+				Transparency = 1,
+			})
+			fadeTween:Play()
+		elseif descendant:IsA("Decal") then
+			local decalTween = TweenService:Create(descendant, tweenInfo, {
+				Transparency = 1,
+			})
+			decalTween:Play()
+		elseif descendant:IsA("PointLight") then
+			local lightTween = TweenService:Create(descendant, tweenInfo, {
+				Brightness = 0,
+			})
+			lightTween:Play()
 		end
 	end
 end
@@ -163,9 +173,7 @@ ZombieDiedRemote.OnClientEvent:Connect(function(data: any)
 
 	local zombieModel = data.zombieModel
 	if zombieModel and typeof(zombieModel) == "Instance" and zombieModel:IsA("Model") then
-		DissolveZombie(zombieModel, data.exploded or false)
-
-		-- play death sound at zombie position
+		-- play death sound at zombie position immediately
 		local position = if zombieModel.PrimaryPart
 			then zombieModel.PrimaryPart.Position
 			else data.position
@@ -173,6 +181,9 @@ ZombieDiedRemote.OnClientEvent:Connect(function(data: any)
 			local zombieType = data.zombieType or "Normal"
 			AudioService.PlayZombieDeath(position, zombieType)
 		end
+
+		-- ragdoll fade runs in its own thread (yields for ragdoll settle time)
+		task.spawn(RagdollFadeZombie, zombieModel, data.exploded or false)
 	end
 end)
 

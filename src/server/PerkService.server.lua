@@ -5,6 +5,7 @@
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
+local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PerkConfig = require(ReplicatedStorage.Modules.PerkConfig)
@@ -271,6 +272,34 @@ end
 --------------------------------------------------
 -- Initialization
 --------------------------------------------------
+
+--------------------------------------------------
+-- RemovePerk Bindable (used by DownedService to consume QuickRevive)
+--------------------------------------------------
+
+task.spawn(function()
+	local removePerkBindable = ServerScriptService:WaitForChild("RemovePerkBindable", 10) :: BindableEvent?
+	if removePerkBindable then
+		removePerkBindable.Event:Connect(function(player: Player, perkName: string)
+			local perks = playerPerks[player]
+			if not perks or not perks[perkName] then
+				return
+			end
+
+			local stats = PerkConfig.Perks[perkName]
+			if stats then
+				player:SetAttribute(stats.AttributeName, nil)
+			end
+
+			perks[perkName] = nil
+
+			PerkLostRemote:FireAllClients({
+				playerId = player.UserId,
+				perksLost = { perkName },
+			})
+		end)
+	end
+end)
 
 -- discover existing machines
 for _, machine in CollectionService:GetTagged("PerkMachine") do

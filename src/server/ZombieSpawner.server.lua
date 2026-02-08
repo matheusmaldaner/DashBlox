@@ -1,6 +1,6 @@
 --!strict
 
--- main zombie system entry point: R6 model builder, object pooling,
+-- main zombie system entry point: clone-based spawner, object pooling,
 -- spawn point management, and wave lifecycle controller
 
 local Players = game:GetService("Players")
@@ -60,125 +60,143 @@ if not ZombieStorage then
 end
 
 --------------------------------------------------
--- R6 Zombie Model Builder
+-- Zombie Model Templates (cloned from ReplicatedStorage.Assets.Zombies)
 --------------------------------------------------
 
--- r6 body part definitions (name, size, offset from torso center)
-local R6_PARTS = {
-	{ name = "Head", size = Vector3.new(2, 1, 1), offset = CFrame.new(0, 1.5, 0) },
-	{ name = "Torso", size = Vector3.new(2, 2, 1), offset = CFrame.new(0, 0, 0) },
-	{ name = "Left Arm", size = Vector3.new(1, 2, 1), offset = CFrame.new(-1.5, 0, 0) },
-	{ name = "Right Arm", size = Vector3.new(1, 2, 1), offset = CFrame.new(1.5, 0, 0) },
-	{ name = "Left Leg", size = Vector3.new(1, 2, 1), offset = CFrame.new(-0.5, -2, 0) },
-	{ name = "Right Leg", size = Vector3.new(1, 2, 1), offset = CFrame.new(0.5, -2, 0) },
-}
+local ZombieAssets = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Zombies")
 
--- motor6d joint definitions connecting r6 parts
-local R6_JOINTS = {
-	{ name = "Neck", part0 = "Torso", part1 = "Head",
-		c0 = CFrame.new(0, 1, 0), c1 = CFrame.new(0, -0.5, 0) },
-	{ name = "Left Shoulder", part0 = "Torso", part1 = "Left Arm",
-		c0 = CFrame.new(-1, 0.5, 0), c1 = CFrame.new(0.5, 0.5, 0) },
-	{ name = "Right Shoulder", part0 = "Torso", part1 = "Right Arm",
-		c0 = CFrame.new(1, 0.5, 0), c1 = CFrame.new(-0.5, 0.5, 0) },
-	{ name = "Left Hip", part0 = "Torso", part1 = "Left Leg",
-		c0 = CFrame.new(-1, -1, 0), c1 = CFrame.new(-0.5, 1, 0) },
-	{ name = "Right Hip", part0 = "Torso", part1 = "Right Leg",
-		c0 = CFrame.new(1, -1, 0), c1 = CFrame.new(0.5, 1, 0) },
-}
+--------------------------------------------------
+-- Healthbar Creator
+--------------------------------------------------
+
+local function CreateHealthbar(model: Model, maxHealth: number): BillboardGui
+	local bbGui = Instance.new("BillboardGui")
+	bbGui.Name = "HealthbarGui"
+	bbGui.Size = UDim2.new(2.5, 0, 0.3, 0)
+	bbGui.StudsOffset = Vector3.new(0, 3.5, 0)
+	bbGui.AlwaysOnTop = true
+	bbGui.MaxDistance = 60
+	bbGui.ResetOnSpawn = false
+
+	-- background bar (dark)
+	local bg = Instance.new("Frame")
+	bg.Name = "Background"
+	bg.Size = UDim2.new(1, 0, 1, 0)
+	bg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+	bg.BackgroundTransparency = 0.3
+	bg.BorderSizePixel = 0
+	bg.Parent = bbGui
+
+	local bgCorner = Instance.new("UICorner")
+	bgCorner.CornerRadius = UDim.new(0.5, 0)
+	bgCorner.Parent = bg
+
+	-- fill bar (red gradient)
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.new(1, 0, 1, 0)
+	fill.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+	fill.BorderSizePixel = 0
+	fill.Parent = bg
+
+	local fillCorner = Instance.new("UICorner")
+	fillCorner.CornerRadius = UDim.new(0.5, 0)
+	fillCorner.Parent = fill
+
+	-- subtle gradient on the fill
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 50, 50)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 20, 20)),
+	})
+	gradient.Rotation = 90
+	gradient.Parent = fill
+
+	-- store max health for ratio calculation
+	bbGui:SetAttribute("MaxHealth", maxHealth)
+
+	-- attach to the model's head or primary part
+	local head = model:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		bbGui.Adornee = head
+	end
+	bbGui.Parent = model
+
+	return bbGui
+end
+
+--------------------------------------------------
+-- Animation Setup
+--------------------------------------------------
+
+local function SetupAnimations(model: Model)
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+
+	-- ensure Animator exists
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if not animator then
+		animator = Instance.new("Animator")
+		animator.Parent = humanoid
+	end
+
+	-- load walk animation
+	local walkAnim = Instance.new("Animation")
+	walkAnim.AnimationId = ZombieConfig.Animations.Walk
+
+	local walkTrack = animator:LoadAnimation(walkAnim)
+	walkTrack.Priority = Enum.AnimationPriority.Movement
+	walkTrack.Looped = true
+	walkTrack:Play()
+
+	-- store attack animation for later use (touch damage triggers it)
+	local attackAnim = Instance.new("Animation")
+	attackAnim.AnimationId = ZombieConfig.Animations.Attack
+	attackAnim.Name = "ZombieAttackAnim"
+	attackAnim.Parent = model
+end
+
+--------------------------------------------------
+-- Clone-based Zombie Model Builder
+--------------------------------------------------
 
 local function CreateZombieModel(zombieType: string): Model
 	local stats = ZombieConfig.Zombies[zombieType]
-	local scale = stats.Scale
 
-	local model = Instance.new("Model")
+	-- determine which template model to clone
+	local modelName = ZombieConfig.ModelName[zombieType] or "Zombie Normal"
+	local template = ZombieAssets:FindFirstChild(modelName)
+	if not template then
+		warn("[ZombieSpawner] missing zombie template: " .. modelName)
+		-- fallback to any available template
+		template = ZombieAssets:GetChildren()[1]
+	end
+
+	local model = template:Clone()
 	model.Name = "Zombie_" .. zombieType
 
-	-- create humanoid
-	local humanoid = Instance.new("Humanoid")
-	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
-	humanoid.WalkSpeed = stats.WalkSpeed
-	humanoid.MaxHealth = stats.Health
-	humanoid.Health = stats.Health
-	humanoid.Parent = model
-
-	-- build body parts
-	local parts: { [string]: BasePart } = {}
-	for _, def in R6_PARTS do
-		local part = Instance.new("Part")
-		part.Name = def.name
-		part.Size = def.size * scale
-		part.Anchored = false
-		part.CanCollide = (def.name == "Torso" or def.name == "Head")
-		part.CollisionGroup = "Zombie"
-		part.Material = Enum.Material.SmoothPlastic
-
-		-- color: head + torso use primary, limbs use secondary
-		if def.name == "Head" or def.name == "Torso" then
-			part.Color = stats.BodyColor
-		else
-			part.Color = stats.SecondaryColor or stats.BodyColor
-		end
-
-		part.CFrame = def.offset
-		part.Parent = model
-		parts[def.name] = part
+	-- configure humanoid
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+		humanoid.WalkSpeed = stats.WalkSpeed
+		humanoid.MaxHealth = stats.Health
+		humanoid.Health = stats.Health
 	end
 
-	-- face decal on head
-	local face = Instance.new("Decal")
-	face.Name = "face"
-	face.Face = Enum.NormalId.Front
-	face.Texture = ZombieConfig.FaceDecalId
-	face.Parent = parts["Head"]
-
-	-- eye glow point light
-	if stats.EyeGlow then
-		local eyeLight = Instance.new("PointLight")
-		eyeLight.Color = stats.EyeGlow
-		eyeLight.Brightness = 1.5
-		eyeLight.Range = 4
-		eyeLight.Parent = parts["Head"]
-	end
-
-	-- motor6d joints
-	for _, jointDef in R6_JOINTS do
-		local motor = Instance.new("Motor6D")
-		motor.Name = jointDef.name
-		motor.Part0 = parts[jointDef.part0]
-		motor.Part1 = parts[jointDef.part1]
-		motor.C0 = jointDef.c0
-		motor.C1 = jointDef.c1
-		motor.Parent = parts[jointDef.part0]
-	end
-
-	-- humanoid root part (required for pathfinding + MoveTo)
-	local rootPart = Instance.new("Part")
-	rootPart.Name = "HumanoidRootPart"
-	rootPart.Size = Vector3.new(2, 2, 1) * scale
-	rootPart.Transparency = 1
-	rootPart.CanCollide = false
-	rootPart.CollisionGroup = "Zombie"
-	rootPart.Anchored = false
-	rootPart.Parent = model
-
-	local rootJoint = Instance.new("Motor6D")
-	rootJoint.Name = "RootJoint"
-	rootJoint.Part0 = rootPart
-	rootJoint.Part1 = parts["Torso"]
-	rootJoint.Parent = rootPart
-
-	model.PrimaryPart = rootPart
-
-	-- accessories from config
-	local accessories = ZombieConfig.Accessories[zombieType]
-	if accessories then
-		for _, accDef in accessories do
-			local acc = Instance.new("Accessory")
-			acc.Name = "ZombieAcc_" .. tostring(accDef.assetId)
-			acc:SetAttribute("AssetId", accDef.assetId)
-			acc.Parent = model
+	-- set collision group and store original state for pool reset
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.CollisionGroup = "Zombie"
+			descendant:SetAttribute("OriginalSize", descendant.Size)
+			descendant:SetAttribute("OriginalTransparency", descendant.Transparency)
+			descendant:SetAttribute("OriginalColor", descendant.Color)
+			descendant:SetAttribute("OriginalCanCollide", descendant.CanCollide)
+		elseif descendant:IsA("Decal") then
+			descendant:SetAttribute("OriginalTransparency", descendant.Transparency)
 		end
 	end
 
@@ -186,14 +204,16 @@ local function CreateZombieModel(zombieType: string): Model
 	model:SetAttribute("IsZombie", true)
 	model:SetAttribute("ZombieType", zombieType)
 
-	-- highlight: visible through walls
+	-- highlight: red outline only, no fill
 	local highlight = Instance.new("Highlight")
-	highlight.FillColor = stats.BodyColor
-	highlight.FillTransparency = 0.7
-	highlight.OutlineColor = stats.EyeGlow or stats.BodyColor
+	highlight.FillTransparency = 1
+	highlight.OutlineColor = Color3.fromRGB(200, 30, 30)
 	highlight.OutlineTransparency = 0
 	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 	highlight.Parent = model
+
+	-- healthbar
+	CreateHealthbar(model, stats.Health)
 
 	return model
 end
@@ -225,30 +245,17 @@ end
 local function ReleaseZombie(model: Model, zombieType: string)
 	activeZombies[model] = nil
 
-	-- reset humanoid
-	local humanoid = model:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		local stats = ZombieConfig.Zombies[zombieType]
-		if stats then
-			humanoid.MaxHealth = stats.Health
-			humanoid.Health = stats.Health
-			humanoid.WalkSpeed = stats.WalkSpeed
-		end
-	end
+	-- ragdolled models have their Motor6Ds destroyed and BallSocketConstraints
+	-- added, making them impractical to restore. destroy and replace with a
+	-- fresh clone for the pool.
+	model:Destroy()
 
-	-- remove creator tag if present
-	if humanoid then
-		local creator = humanoid:FindFirstChild("creator")
-		if creator then
-			creator:Destroy()
-		end
-	end
-
-	model.Parent = ZombieStorage
+	local fresh = CreateZombieModel(zombieType)
+	fresh.Parent = ZombieStorage
 
 	local pool = zombiePool[zombieType]
 	if pool then
-		table.insert(pool, model)
+		table.insert(pool, fresh)
 	end
 end
 
@@ -324,8 +331,24 @@ local function SpawnZombie(zombieType: string, round: number)
 		humanoid.WalkSpeed = stats.WalkSpeed
 	end
 
+	-- update healthbar max health for this round's scaling
+	local healthbarGui = model:FindFirstChild("HealthbarGui") :: BillboardGui?
+	if healthbarGui then
+		healthbarGui:SetAttribute("MaxHealth", scaledHealth)
+		local bg = healthbarGui:FindFirstChild("Background")
+		if bg then
+			local fill = bg:FindFirstChild("Fill") :: Frame?
+			if fill then
+				fill.Size = UDim2.new(1, 0, 1, 0)
+			end
+		end
+	end
+
 	model:PivotTo(spawnCF)
 	model.Parent = workspace
+
+	-- set up walk/attack animations
+	SetupAnimations(model)
 
 	-- track this zombie
 	local zombieData: ZombieAI.ZombieData = {
@@ -389,6 +412,12 @@ EndRound = function()
 	waveState.restPhase = true
 	local round = waveState.round
 
+	-- notify DownedService to revive downed players and respawn dead players
+	local roundEndedBindable = ServerScriptService:FindFirstChild("RoundEndedBindable") :: BindableEvent?
+	if roundEndedBindable then
+		roundEndedBindable:Fire()
+	end
+
 	WaveCompletedRemote:FireAllClients({
 		round = round,
 	})
@@ -431,9 +460,6 @@ StartRound = function(round: number)
 		local maxAlive = WaveConfig.GetMaxAlive(waveState.playerCount)
 		local typeWeights = WaveConfig.GetZombieTypeWeights(round)
 
-		-- boss logic: spawn one boss as last zombie on milestone rounds
-		local shouldSpawnBoss = (round >= 10 and round % 5 == 0)
-
 		while waveState.zombiesSpawned < waveState.totalZombiesForRound and waveState.isActive do
 			-- wait if at max alive cap
 			while waveState.zombiesAlive >= maxAlive and waveState.isActive do
@@ -444,10 +470,10 @@ StartRound = function(round: number)
 				break
 			end
 
-			-- pick zombie type
+			-- pick zombie type: boss is always the last zombie of every round
 			local zombieType: string
 			local isLastZombie = waveState.zombiesSpawned == waveState.totalZombiesForRound - 1
-			if shouldSpawnBoss and isLastZombie then
+			if isLastZombie then
 				zombieType = "Boss"
 			else
 				zombieType = WaveConfig.PickZombieType(typeWeights)
