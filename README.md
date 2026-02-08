@@ -67,4 +67,3 @@ Then we connected that pipeline directly to our Roblox game build loop: **genera
 - **[Matheus Kunzler Maldaner](https://github.com/matheusmaldaner)**
 - **[Luana Kunzler Maldaner](https://github.com/luanamaldaner)**
 - **[Andrew Vu](https://github.com/adv-andrew)**
-- **[Jordan Rodriguez](https://github.com/JordanRodriguez)**
