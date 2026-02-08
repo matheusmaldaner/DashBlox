@@ -1,6 +1,10 @@
 // landing page section animations (extracted from landing.js for file size limit)
 /* global gsap, ScrollTrigger, ScrollToPlugin */
 
+// lower viewport percentages mean the trigger fires later
+var OVERLAY_SECTION_START = 'top 74%';
+var OVERLAY_ITEM_START = 'top 78%';
+
 // feature cards scroll-triggered fade in
 function initFeatureAnimations() {
   var cards = gsap.utils.toArray('.feature-card');
@@ -13,7 +17,7 @@ function initFeatureAnimations() {
       ease: 'power3.out',
       scrollTrigger: {
         trigger: card,
-        start: 'top 85%',
+        start: OVERLAY_ITEM_START,
         toggleActions: 'play none none reverse',
       },
       delay: (i % 3) * 0.1,
@@ -30,7 +34,7 @@ function initFeatureAnimations() {
       ease: 'power3.out',
       scrollTrigger: {
         trigger: '.features-header',
-        start: 'top 85%',
+        start: OVERLAY_ITEM_START,
         toggleActions: 'play none none reverse',
       },
     }
@@ -49,7 +53,7 @@ function initAboutAnimations() {
       ease: 'power3.out',
       scrollTrigger: {
         trigger: '.about',
-        start: 'top 80%',
+        start: OVERLAY_SECTION_START,
         toggleActions: 'play none none reverse',
       },
     }
@@ -65,7 +69,7 @@ function initAboutAnimations() {
       ease: 'power3.out',
       scrollTrigger: {
         trigger: '.about-desc',
-        start: 'top 85%',
+        start: OVERLAY_ITEM_START,
         toggleActions: 'play none none reverse',
       },
     }
@@ -81,7 +85,7 @@ function initAboutAnimations() {
       ease: 'power3.out',
       scrollTrigger: {
         trigger: '.about-stats',
-        start: 'top 85%',
+        start: OVERLAY_ITEM_START,
         toggleActions: 'play none none reverse',
       },
     });
@@ -94,7 +98,7 @@ function initAboutAnimations() {
     ease: 'power3.out',
     scrollTrigger: {
       trigger: '.about-visual',
-      start: 'top 85%',
+      start: OVERLAY_ITEM_START,
       toggleActions: 'play none none reverse',
     },
   });
@@ -112,7 +116,7 @@ function initTeamAnimations() {
       ease: 'power3.out',
       scrollTrigger: {
         trigger: '.team',
-        start: 'top 80%',
+        start: OVERLAY_SECTION_START,
         toggleActions: 'play none none reverse',
       },
     }
@@ -129,7 +133,7 @@ function initTeamAnimations() {
       ease: 'power3.out',
       scrollTrigger: {
         trigger: '.team',
-        start: 'top 80%',
+        start: OVERLAY_SECTION_START,
         toggleActions: 'play none none reverse',
       },
     }
@@ -145,7 +149,7 @@ function initTeamAnimations() {
       ease: 'power3.out',
       scrollTrigger: {
         trigger: '.team-grid',
-        start: 'top 85%',
+        start: OVERLAY_ITEM_START,
         toggleActions: 'play none none reverse',
       },
     });
