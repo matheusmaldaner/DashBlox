@@ -12,6 +12,7 @@ local GameModeService = require(ReplicatedStorage.Modules.GameModeService)
 local CrouchController = require(script.Parent.Parent.Movement.CrouchController)
 local SprintController = require(script.Parent.Parent.Movement.SprintController)
 local AudioService = require(ReplicatedStorage.Modules.Audio.AudioService)
+local HeadshotEffects = require(script.Parent.Parent.Combat.HeadshotEffects)
 local Settings = require(ReplicatedStorage.Modules.Settings)
 local MatchStateClient = require(ReplicatedStorage.Modules.MatchStateClient)
 local InputManager = require(ReplicatedStorage.Modules.InputManager)
@@ -171,6 +172,7 @@ local UnequipGunRemote = RemoteService.GetRemote("UnequipGun") :: RemoteEvent
 local ReloadGunRemote = RemoteService.GetRemote("ReloadGun") :: RemoteEvent
 local GiveLoadoutRemote = RemoteService.GetRemote("GiveLoadout") :: RemoteEvent
 local ReloadAllWeaponsRemote = RemoteService.GetRemote("ReloadAllWeapons") :: RemoteEvent
+local DamageDealtRemote = RemoteService.GetRemote("DamageDealt") :: RemoteEvent
 
 -- Player gun state
 local state = {
@@ -1214,13 +1216,36 @@ end)
 
 -- Handle hit confirmation from server
 GunHitRemote.OnClientEvent:Connect(function(hitInfo)
-	-- Play hit marker sound
+	-- play hit marker sound
 	AudioService.PlayHitMarker(hitInfo.headshot)
 
-	-- Play kill sound if eliminated
+	-- flash the crosshair X hitmarker
+	CrosshairController.FlashHit(hitInfo.headshot, hitInfo.killed)
+
+	-- play kill sound if eliminated
 	if hitInfo.killed then
 		AudioService.PlayKillSound()
-		print("[Gun] Kill confirmed!")
+	end
+end)
+
+-- Handle damage dealt feedback (zombie hit sounds + headshot effects)
+DamageDealtRemote.OnClientEvent:Connect(function(data)
+	if not data then
+		return
+	end
+
+	local position = data.position
+	local isHeadshot = data.isHeadshot
+	local isZombie = data.isZombie
+
+	-- play zombie hit sound at impact position
+	if isZombie and position and typeof(position) == "Vector3" then
+		AudioService.PlayZombieHit(position, isHeadshot)
+	end
+
+	-- trigger headshot celebration effects (screen flash + particle burst)
+	if isHeadshot then
+		HeadshotEffects.Play(if position and typeof(position) == "Vector3" then position else nil)
 	end
 end)
 

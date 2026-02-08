@@ -8,7 +8,7 @@ local AudioConfig = {}
 -- Sound ID Types
 --------------------------------------------------
 
-export type SoundCategory = "Weapons" | "Building" | "Movement" | "Combat" | "UI"
+export type SoundCategory = "Weapons" | "Building" | "Movement" | "Combat" | "UI" | "Zombies"
 
 --------------------------------------------------
 -- Weapon Sounds (per weapon type)
@@ -137,6 +137,26 @@ AudioConfig.Combat = {
 }
 
 --------------------------------------------------
+-- Zombie Sounds
+-- Hit feedback + death sounds for zombie combat
+--------------------------------------------------
+
+AudioConfig.Zombies = {
+	-- hit feedback (3D at zombie position)
+	hitFlesh = "rbxassetid://3626698892", -- meaty flesh impact thud
+	hitFleshAlt = "rbxassetid://9064853890", -- alternate impact for variation
+	hitHeadshot = "rbxassetid://3398628813", -- bone crack/crunch on headshot
+
+	-- death sounds (3D at zombie position)
+	deathGroan = "rbxassetid://1843977518", -- zombie groan/moan
+	deathExploder = "rbxassetid://262562442", -- explosive death burst
+	deathBoss = "rbxassetid://1843977518", -- deeper groan (pitched down via AudioService)
+
+	-- headshot celebration (local, non-positional)
+	headshotConfirm = "rbxassetid://1129547534", -- crisp ping for headshot kill
+}
+
+--------------------------------------------------
 -- UI Sounds
 --------------------------------------------------
 
@@ -200,6 +220,7 @@ AudioConfig.DefaultVolumes = {
 	UI = 0.4,
 	Pickaxe = 0.5,
 	Announcer = 0.7, -- announcer should be clearly audible
+	Zombies = 0.55, -- zombie hit/death sounds
 }
 
 -- Competitive audio settings for enemy awareness
@@ -226,6 +247,10 @@ AudioConfig.SpatialSettings = {
 	-- Footsteps - extended range for competitive awareness
 	footstepRollOffMaxDistance = 80, -- hear enemies from farther
 	footstepRollOffMinDistance = 5, -- close range stays loud
+
+	-- Zombie sounds - moderate range
+	zombieRollOffMaxDistance = 120,
+	zombieRollOffMinDistance = 8,
 }
 
 --------------------------------------------------
@@ -282,6 +307,12 @@ function AudioConfig.GetFootstepSound(floorMaterial: Enum.Material): string
 
 	local category = materialMap[floorMaterial] or "Default"
 	return footsteps[category] or footsteps.Default
+end
+
+-- Get zombie sound ID
+function AudioConfig.GetZombieSound(soundType: string): string
+	local sound = AudioConfig.Zombies[soundType]
+	return sound or "rbxassetid://0"
 end
 
 return AudioConfig

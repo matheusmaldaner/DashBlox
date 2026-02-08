@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 
 local RemoteService = require(ReplicatedStorage.Modules.RemoteService)
 local ZombieConfig = require(ReplicatedStorage.Modules.Zombies.ZombieConfig)
+local AudioService = require(ReplicatedStorage.Modules.Audio.AudioService)
 
 --------------------------------------------------
 -- Remotes
@@ -163,6 +164,15 @@ ZombieDiedRemote.OnClientEvent:Connect(function(data: any)
 	local zombieModel = data.zombieModel
 	if zombieModel and typeof(zombieModel) == "Instance" and zombieModel:IsA("Model") then
 		DissolveZombie(zombieModel, data.exploded or false)
+
+		-- play death sound at zombie position
+		local position = if zombieModel.PrimaryPart
+			then zombieModel.PrimaryPart.Position
+			else data.position
+		if position and typeof(position) == "Vector3" then
+			local zombieType = data.zombieType or "Normal"
+			AudioService.PlayZombieDeath(position, zombieType)
+		end
 	end
 end)
 

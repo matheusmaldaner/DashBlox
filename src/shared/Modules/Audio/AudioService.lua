@@ -135,6 +135,11 @@ local function collectAllSoundIds(): { string }
 		addSound(soundId)
 	end
 
+	-- Zombies
+	for _, soundId in AudioConfig.Zombies do
+		addSound(soundId)
+	end
+
 	return soundIds
 end
 
@@ -196,6 +201,8 @@ function AudioService.PlayLocalSound(category: string, soundName: string, volume
 		soundId = AudioConfig.UI[soundName]
 	elseif category == "Pickaxe" then
 		soundId = AudioConfig.Pickaxe[soundName]
+	elseif category == "Zombies" then
+		soundId = AudioConfig.Zombies[soundName]
 	end
 
 	if not soundId or soundId == "rbxassetid://0" then
@@ -245,6 +252,8 @@ function AudioService.Play3DSound(category: string, soundName: string, position:
 		soundId = AudioConfig.Combat[soundName]
 	elseif category == "Pickaxe" then
 		soundId = AudioConfig.Pickaxe[soundName]
+	elseif category == "Zombies" then
+		soundId = AudioConfig.Zombies[soundName]
 	end
 
 	if not soundId or soundId == "rbxassetid://0" then
@@ -511,6 +520,60 @@ end
 -- Stop low health heartbeat
 function AudioService.StopLowHealthWarning()
 	AudioService.StopNamedSound("lowHealthHeartbeat")
+end
+
+--------------------------------------------------
+-- Zombie Sound Helpers
+--------------------------------------------------
+
+-- play zombie hit sound at position (flesh impact or headshot crack)
+function AudioService.PlayZombieHit(position: Vector3, isHeadshot: boolean?): Sound?
+	local soundName = if isHeadshot then "hitHeadshot" else "hitFlesh"
+
+	-- randomly use alternate flesh sound for variation
+	if not isHeadshot and math.random() > 0.5 then
+		soundName = "hitFleshAlt"
+	end
+
+	local soundId = AudioConfig.GetZombieSound(soundName)
+	local range = AudioConfig.SpatialSettings.zombieRollOffMaxDistance
+
+	return AudioService.PlaySoundId(
+		soundId,
+		position,
+		AudioConfig.DefaultVolumes.Zombies,
+		range,
+		true -- pitch/volume variation for natural feel
+	)
+end
+
+-- play zombie death sound at position
+function AudioService.PlayZombieDeath(position: Vector3, zombieType: string?): Sound?
+	local soundName = "deathGroan"
+
+	if zombieType == "Exploder" then
+		soundName = "deathExploder"
+	elseif zombieType == "Boss" then
+		soundName = "deathBoss"
+	end
+
+	local soundId = AudioConfig.GetZombieSound(soundName)
+	local range = AudioConfig.SpatialSettings.zombieRollOffMaxDistance
+
+	local sound = AudioService.PlaySoundId(
+		soundId,
+		position,
+		AudioConfig.DefaultVolumes.Zombies * 1.2, -- deaths are slightly louder
+		range,
+		true
+	)
+
+	-- pitch down boss death for a deeper growl
+	if sound and zombieType == "Boss" then
+		sound.PlaybackSpeed = 0.7
+	end
+
+	return sound
 end
 
 --------------------------------------------------
