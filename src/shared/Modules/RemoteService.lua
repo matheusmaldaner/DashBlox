@@ -130,6 +130,23 @@ local remoteRegistry: { [string]: string } = {
 	["GiveTestCoins"] = "RemoteEvent",        -- client -> server: dev testing, give coins
 	["CoinsChanged"] = "RemoteEvent",         -- server -> client: coin count updated
 
+	-- Perk system
+	["PerkPurchased"] = "RemoteEvent",        -- server -> all clients: player bought a perk
+	["PerkLost"] = "RemoteEvent",             -- server -> all clients: player lost perks (death)
+	["PerkSyncAll"] = "RemoteEvent",          -- server -> client: sync all active perks on join
+
+	-- Pack-a-Punch system
+	["PackAPunchStarted"] = "RemoteEvent",    -- server -> all clients: player started upgrading
+	["PackAPunchCompleted"] = "RemoteEvent",  -- server -> all clients: weapon upgraded
+	["PackAPunchFailed"] = "RemoteEvent",     -- server -> client: upgrade failed (no gun, etc.)
+
+	-- Powerup system
+	["PowerupSpawned"] = "RemoteEvent",       -- server -> all clients: powerup dropped
+	["PowerupCollected"] = "RemoteEvent",     -- server -> all clients: powerup picked up
+	["PowerupExpired"] = "RemoteEvent",       -- server -> all clients: powerup timed out
+	["PowerupActivated"] = "RemoteEvent",     -- server -> all clients: powerup effect started
+	["PowerupDeactivated"] = "RemoteEvent",   -- server -> all clients: powerup effect ended
+
 	-- Cosmetics/Locker system
 	["GetCosmetics"] = "RemoteFunction", -- get player's cosmetic data
 	["EquipCosmetic"] = "RemoteFunction", -- equip item (returns success)

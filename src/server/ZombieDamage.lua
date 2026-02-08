@@ -61,6 +61,30 @@ end
 -- Damage Application
 --------------------------------------------------
 
+-- check if Insta-Kill powerup is active (via PowerupService bindable)
+local function IsInstaKillActive(): boolean
+	local bindable = ServerScriptService:FindFirstChild("PowerupQueryBindable") :: BindableFunction?
+	if not bindable then
+		return false
+	end
+	local success, result = pcall(function()
+		return bindable:Invoke("IsInstaKill")
+	end)
+	return success and result == true
+end
+
+-- check if Double Points powerup is active
+local function IsDoublePointsActive(): boolean
+	local bindable = ServerScriptService:FindFirstChild("PowerupQueryBindable") :: BindableFunction?
+	if not bindable then
+		return false
+	end
+	local success, result = pcall(function()
+		return bindable:Invoke("IsDoublePoints")
+	end)
+	return success and result == true
+end
+
 -- apply damage to a zombie, returns remaining health
 function ZombieDamage.ApplyDamage(
 	attacker: Player,
@@ -72,6 +96,11 @@ function ZombieDamage.ApplyDamage(
 	local humanoid = zombieModel:FindFirstChildOfClass("Humanoid")
 	if not humanoid or humanoid.Health <= 0 then
 		return 0
+	end
+
+	-- Insta-Kill: any hit kills the zombie instantly
+	if IsInstaKillActive() then
+		damage = humanoid.Health + 1
 	end
 
 	humanoid:TakeDamage(damage)
@@ -128,12 +157,27 @@ function ZombieDamage.ConnectZombieDeath(
 			killer = creator.Value :: Player
 		end
 
-		-- award coins to killer
+		-- award coins to killer (Double Points doubles reward)
 		if killer then
+			local coinReward = stats.CoinReward
+			if IsDoublePointsActive() then
+				coinReward *= 2
+			end
+
 			local coinEvent = ServerScriptService:FindFirstChild("AddCoinsEvent") :: BindableEvent?
 			if coinEvent then
-				coinEvent:Fire(killer, stats.CoinReward)
+				coinEvent:Fire(killer, coinReward)
 			end
+		end
+
+		-- notify PowerupService for potential drop
+		local dropEvent = ServerScriptService:FindFirstChild("PowerupDropEvent") :: BindableEvent?
+		if dropEvent then
+			local deathPos = Vector3.zero
+			if zombieModel.PrimaryPart then
+				deathPos = zombieModel.PrimaryPart.Position
+			end
+			dropEvent:Fire(deathPos)
 		end
 
 		-- handle exploder AoE
