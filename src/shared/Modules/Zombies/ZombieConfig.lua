@@ -136,10 +136,10 @@ ZombieConfig.Accessories = {
 -- which round each zombie type first appears
 ZombieConfig.TypeUnlockRounds = {
 	["Normal"] = 1,
+	["Tank"] = 1,
+	["Boss"] = 1,
 	["Fast"] = 3,
 	["Exploder"] = 5,
-	["Tank"] = 7,
-	["Boss"] = 10,
 }
 
 --------------------------------------------------
@@ -167,8 +167,9 @@ ZombieConfig.Animations = {
 -- Constants
 --------------------------------------------------
 
-ZombieConfig.DissolveTime = 1.5
-ZombieConfig.DespawnDelay = 3.0
+ZombieConfig.RagdollTime = 1.5    -- seconds body stays ragdolled before fade
+ZombieConfig.FadeOutTime = 1.0    -- seconds to tween transparency after ragdoll
+ZombieConfig.DespawnDelay = 4.0   -- total time before pool return (ragdoll + fade + buffer)
 ZombieConfig.FaceDecalId = "rbxassetid://36869983"
 ZombieConfig.PoolSizePerType = 10
 

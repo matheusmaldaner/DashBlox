@@ -185,13 +185,14 @@ local function CreateZombieModel(zombieType: string): Model
 		humanoid.Health = stats.Health
 	end
 
-	-- set collision group on all parts and store original sizes for pool reset
+	-- set collision group and store original state for pool reset
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.CollisionGroup = "Zombie"
 			descendant:SetAttribute("OriginalSize", descendant.Size)
 			descendant:SetAttribute("OriginalTransparency", descendant.Transparency)
 			descendant:SetAttribute("OriginalColor", descendant.Color)
+			descendant:SetAttribute("OriginalCanCollide", descendant.CanCollide)
 		elseif descendant:IsA("Decal") then
 			descendant:SetAttribute("OriginalTransparency", descendant.Transparency)
 		end
@@ -242,88 +243,17 @@ end
 local function ReleaseZombie(model: Model, zombieType: string)
 	activeZombies[model] = nil
 
-	-- reset humanoid
-	local humanoid = model:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		local stats = ZombieConfig.Zombies[zombieType]
-		if stats then
-			humanoid.MaxHealth = stats.Health
-			humanoid.Health = stats.Health
-			humanoid.WalkSpeed = stats.WalkSpeed
-		end
+	-- ragdolled models have their Motor6Ds destroyed and BallSocketConstraints
+	-- added, making them impractical to restore. destroy and replace with a
+	-- fresh clone for the pool.
+	model:Destroy()
 
-		-- stop all playing animations so they can be restarted on next spawn
-		local animator = humanoid:FindFirstChildOfClass("Animator")
-		if animator then
-			for _, track in animator:GetPlayingAnimationTracks() do
-				track:Stop(0)
-			end
-		end
-	end
-
-	-- remove creator tag if present
-	if humanoid then
-		local creator = humanoid:FindFirstChild("creator")
-		if creator then
-			creator:Destroy()
-		end
-	end
-
-	-- remove stored attack animation instance (recreated on next spawn)
-	local attackAnim = model:FindFirstChild("ZombieAttackAnim")
-	if attackAnim then
-		attackAnim:Destroy()
-	end
-
-	-- reset healthbar
-	local healthbarGui = model:FindFirstChild("HealthbarGui") :: BillboardGui?
-	if healthbarGui then
-		healthbarGui.Enabled = true
-		local bg = healthbarGui:FindFirstChild("Background")
-		if bg then
-			local fill = bg:FindFirstChild("Fill") :: Frame?
-			if fill then
-				fill.Size = UDim2.new(1, 0, 1, 0)
-			end
-		end
-	end
-
-	-- restore parts to original state after dissolve effect
-	for _, descendant in model:GetDescendants() do
-		if descendant:IsA("BasePart") then
-			local origSize = descendant:GetAttribute("OriginalSize")
-			if origSize then
-				descendant.Size = origSize
-			end
-			local origTransparency = descendant:GetAttribute("OriginalTransparency")
-			if origTransparency ~= nil then
-				descendant.Transparency = origTransparency
-			end
-			local origColor = descendant:GetAttribute("OriginalColor")
-			if origColor then
-				descendant.Color = origColor
-			end
-		elseif descendant:IsA("Decal") then
-			local origTransparency = descendant:GetAttribute("OriginalTransparency")
-			if origTransparency ~= nil then
-				descendant.Transparency = origTransparency
-			end
-		elseif descendant:IsA("PointLight") then
-			descendant.Brightness = 1.5
-		end
-	end
-
-	-- restore highlight
-	local highlight = model:FindFirstChildOfClass("Highlight")
-	if highlight then
-		highlight.Enabled = true
-	end
-
-	model.Parent = ZombieStorage
+	local fresh = CreateZombieModel(zombieType)
+	fresh.Parent = ZombieStorage
 
 	local pool = zombiePool[zombieType]
 	if pool then
-		table.insert(pool, model)
+		table.insert(pool, fresh)
 	end
 end
 
@@ -504,9 +434,6 @@ StartRound = function(round: number)
 		local maxAlive = WaveConfig.GetMaxAlive(waveState.playerCount)
 		local typeWeights = WaveConfig.GetZombieTypeWeights(round)
 
-		-- boss logic: spawn one boss as last zombie on milestone rounds
-		local shouldSpawnBoss = (round >= 10 and round % 5 == 0)
-
 		while waveState.zombiesSpawned < waveState.totalZombiesForRound and waveState.isActive do
 			-- wait if at max alive cap
 			while waveState.zombiesAlive >= maxAlive and waveState.isActive do
@@ -517,10 +444,10 @@ StartRound = function(round: number)
 				break
 			end
 
-			-- pick zombie type
+			-- pick zombie type: boss is always the last zombie of every round
 			local zombieType: string
 			local isLastZombie = waveState.zombiesSpawned == waveState.totalZombiesForRound - 1
-			if shouldSpawnBoss and isLastZombie then
+			if isLastZombie then
 				zombieType = "Boss"
 			else
 				zombieType = WaveConfig.PickZombieType(typeWeights)

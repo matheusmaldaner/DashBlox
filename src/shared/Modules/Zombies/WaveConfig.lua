@@ -106,16 +106,16 @@ function WaveConfig.GetZombieTypeWeights(round: number): { { zombieType: string,
 	if round >= unlocks["Normal"] then
 		table.insert(weights, { zombieType = "Normal", weight = 50 })
 	end
+	if round >= unlocks["Tank"] then
+		table.insert(weights, { zombieType = "Tank", weight = 10 })
+	end
 	if round >= unlocks["Fast"] then
 		table.insert(weights, { zombieType = "Fast", weight = 25 })
 	end
 	if round >= unlocks["Exploder"] then
 		table.insert(weights, { zombieType = "Exploder", weight = 15 })
 	end
-	if round >= unlocks["Tank"] then
-		table.insert(weights, { zombieType = "Tank", weight = 10 })
-	end
-	-- boss is handled separately in spawner (not via weights)
+	-- boss is handled separately in spawner (last zombie each round)
 
 	return weights
 end

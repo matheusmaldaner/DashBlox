@@ -144,6 +144,50 @@ function ZombieDamage.ApplyDamage(
 end
 
 --------------------------------------------------
+-- Ragdoll
+--------------------------------------------------
+
+-- converts a zombie to ragdoll: destroys Motor6Ds, replaces with
+-- BallSocketConstraints so limbs go limp, enables CanCollide on all parts
+local function RagdollZombie(zombieModel: Model)
+	for _, descendant in zombieModel:GetDescendants() do
+		if descendant:IsA("Motor6D") then
+			-- replace with BallSocketConstraint for floppy ragdoll
+			local part0 = descendant.Part0
+			local part1 = descendant.Part1
+			if part0 and part1 then
+				local att0 = Instance.new("Attachment")
+				att0.Name = "RagdollAtt0_" .. descendant.Name
+				att0.CFrame = descendant.C0
+				att0.Parent = part0
+
+				local att1 = Instance.new("Attachment")
+				att1.Name = "RagdollAtt1_" .. descendant.Name
+				att1.CFrame = descendant.C1
+				att1.Parent = part1
+
+				local constraint = Instance.new("BallSocketConstraint")
+				constraint.Name = "RagdollConstraint_" .. descendant.Name
+				constraint.Attachment0 = att0
+				constraint.Attachment1 = att1
+				constraint.LimitsEnabled = true
+				constraint.UpperAngle = 45
+				constraint.Parent = part0
+			end
+
+			descendant:Destroy()
+		end
+	end
+
+	-- enable CanCollide on all parts so the body rests on the ground
+	for _, descendant in zombieModel:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.CanCollide = true
+		end
+	end
+end
+
+--------------------------------------------------
 -- Death Handling
 --------------------------------------------------
 
@@ -199,7 +243,10 @@ function ZombieDamage.ConnectZombieDeath(
 			ZombieDamage.HandleExplosion(zombieModel, stats)
 		end
 
-		-- notify all clients for dissolve effect
+		-- ragdoll: break joints so body goes limp and flops over
+		RagdollZombie(zombieModel)
+
+		-- notify all clients for fade-out effect
 		if ZombieDiedRemote then
 			local position = Vector3.zero
 			if zombieModel.PrimaryPart then
