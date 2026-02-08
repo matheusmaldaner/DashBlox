@@ -1,9 +1,10 @@
 --!strict
 
--- server module: centralized zombie AI with direct chase, optimized for performance
--- single heartbeat loop processes all zombies; no PathfindingService dependency
+-- server module: centralized zombie AI with pathfinding
+-- single heartbeat loop processes all zombies with staggered path recomputation
 -- required by ZombieSpawner.server.lua
 
+local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,9 +18,21 @@ local ZombieAI = {}
 -- Constants
 --------------------------------------------------
 
-local TARGET_REVAL_FRAMES = 6 -- re-evaluate nearest player every 6 frames (~0.1s at 60fps)
-local JUMP_RAY_DISTANCE = 3.0 -- forward raycast distance for wall detection
-local JUMP_RAY_HEIGHT_OFFSET = 1.0 -- ray origin offset above rootpart center (knee height)
+-- target evaluation
+local TARGET_REVAL_FRAMES = 6 -- re-evaluate nearest player every 6 frames (~0.1s)
+local DIRECT_CHASE_DISTANCE = 15 -- skip pathfinding when this close
+
+-- pathfinding
+local MAX_CONCURRENT_PATHS = 6 -- max simultaneous ComputeAsync calls
+local PATH_RECOMPUTE_FRAMES = 60 -- request a new path every ~1 second
+local WAYPOINT_REACH_DIST = 4 -- advance to next waypoint when this close
+
+local AGENT_PARAMS = {
+	AgentRadius = 2,
+	AgentHeight = 5,
+	AgentCanJump = true,
+	AgentCanClimb = false,
+}
 
 --------------------------------------------------
 -- Types
@@ -38,6 +51,11 @@ export type ZombieData = {
 	-- internal: managed by StartAI/StopAI
 	_registryIndex: number?,
 	_staggerBucket: number?,
+	-- pathfinding state
+	_waypoints: { PathWaypoint }?,
+	_waypointIndex: number,
+	_pathAge: number,
+	_pathRequested: boolean,
 }
 
 --------------------------------------------------
@@ -52,9 +70,8 @@ local frameCounter: number = 0
 local cachedPlayers: { { player: Player, rootPart: BasePart, position: Vector3 } } = {}
 local cachedPlayerCount: number = 0
 
--- single shared raycast params (filter swapped per zombie)
-local jumpRayParams = RaycastParams.new()
-jumpRayParams.FilterType = Enum.RaycastFilterType.Exclude
+-- pathfinding concurrency control
+local activePathComputations: number = 0
 
 -- the one heartbeat connection for all zombies
 local heartbeatConnection: RBXScriptConnection? = nil
@@ -140,7 +157,71 @@ function ZombieAI.GetNearestPlayer(position: Vector3): Player?
 end
 
 --------------------------------------------------
--- Touch Damage (unchanged from original)
+-- Pathfinding (async, concurrency-limited)
+--------------------------------------------------
+
+-- request a path computation for a zombie (non-blocking)
+local function RequestPath(zombieData: ZombieData, startPos: Vector3, targetPos: Vector3)
+	if zombieData._pathRequested then
+		return
+	end
+	if activePathComputations >= MAX_CONCURRENT_PATHS then
+		return
+	end
+
+	zombieData._pathRequested = true
+	activePathComputations += 1
+
+	task.spawn(function()
+		-- zombie may have died while we were queued
+		if zombieData.aiState == "dying" then
+			zombieData._pathRequested = false
+			activePathComputations -= 1
+			return
+		end
+
+		local path = PathfindingService:CreatePath(AGENT_PARAMS)
+		local success = pcall(function()
+			path:ComputeAsync(startPos, targetPos)
+		end)
+
+		if success and path.Status == Enum.PathStatus.Success then
+			local waypoints = path:GetWaypoints()
+			if #waypoints > 1 then
+				zombieData._waypoints = waypoints
+				zombieData._waypointIndex = 2 -- skip first (current position)
+				zombieData._pathAge = frameCounter
+			end
+		end
+
+		zombieData._pathRequested = false
+		activePathComputations -= 1
+	end)
+end
+
+-- check if a zombie needs a new path (no path, or path is stale)
+local function NeedsNewPath(zombieData: ZombieData): boolean
+	if not zombieData._waypoints then
+		return true
+	end
+	if zombieData._waypointIndex > #zombieData._waypoints then
+		return true
+	end
+	if (frameCounter - zombieData._pathAge) > PATH_RECOMPUTE_FRAMES then
+		return true
+	end
+	return false
+end
+
+-- clear a zombie's path data
+local function ClearPath(zombieData: ZombieData)
+	zombieData._waypoints = nil
+	zombieData._waypointIndex = 1
+	zombieData._pathAge = 0
+end
+
+--------------------------------------------------
+-- Touch Damage
 --------------------------------------------------
 
 -- sets up touch damage on the zombie's torso
@@ -249,7 +330,12 @@ local function EnsureHeartbeat()
 
 			-- staggered target re-evaluation
 			if currentBucket == zd._staggerBucket then
-				zd.targetPlayer = ZombieAI.GetNearestPlayer(zombiePos)
+				local newTarget = ZombieAI.GetNearestPlayer(zombiePos)
+				-- clear path if target changed
+				if newTarget ~= zd.targetPlayer then
+					ClearPath(zd)
+				end
+				zd.targetPlayer = newTarget
 			end
 
 			-- resolve target position
@@ -273,19 +359,43 @@ local function EnsureHeartbeat()
 				continue
 			end
 
-			-- direct chase
-			zd.humanoid:MoveTo(targetRoot.Position)
+			local targetPos = targetRoot.Position
+			local delta = targetPos - zombiePos
+			local distSq = delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z
 
-			-- raycast-based jump detection
-			local moveDirection = zd.humanoid.MoveDirection
-			if moveDirection.Magnitude > 0.1 then
-				local rayOrigin = zombiePos + Vector3.new(0, JUMP_RAY_HEIGHT_OFFSET, 0)
-				local rayDirection = moveDirection.Unit * JUMP_RAY_DISTANCE
+			-- CLOSE RANGE: direct chase, no pathfinding needed
+			if distSq < DIRECT_CHASE_DISTANCE * DIRECT_CHASE_DISTANCE then
+				ClearPath(zd)
+				zd.humanoid:MoveTo(targetPos)
+			else
+				-- FAR RANGE: use pathfinding
 
-				jumpRayParams.FilterDescendantsInstances = { zd.model }
-				local result = workspace:Raycast(rayOrigin, rayDirection, jumpRayParams)
-				if result then
-					zd.humanoid.Jump = true
+				-- request a new path if needed (stale, exhausted, or missing)
+				if NeedsNewPath(zd) then
+					RequestPath(zd, zombiePos, targetPos)
+				end
+
+				-- follow waypoints if we have them, otherwise direct chase as fallback
+				local waypoints = zd._waypoints
+				if waypoints and zd._waypointIndex <= #waypoints then
+					local wp = waypoints[zd._waypointIndex]
+
+					zd.humanoid:MoveTo(wp.Position)
+
+					-- advance waypoint if close enough
+					local wpDelta = wp.Position - zombiePos
+					local wpDistSq = wpDelta.X * wpDelta.X + wpDelta.Y * wpDelta.Y + wpDelta.Z * wpDelta.Z
+					if wpDistSq < WAYPOINT_REACH_DIST * WAYPOINT_REACH_DIST then
+						zd._waypointIndex += 1
+					end
+
+					-- handle jump waypoints
+					if wp.Action == Enum.PathWaypointAction.Jump then
+						zd.humanoid.Jump = true
+					end
+				else
+					-- no path yet (waiting for ComputeAsync), direct chase in the meantime
+					zd.humanoid:MoveTo(targetPos)
 				end
 			end
 		end
@@ -300,6 +410,12 @@ end
 function ZombieAI.StartAI(zombieData: ZombieData)
 	zombieData.aiState = "chasing"
 	zombieData.connections = zombieData.connections or {}
+
+	-- initialize pathfinding state
+	zombieData._waypoints = nil
+	zombieData._waypointIndex = 1
+	zombieData._pathAge = 0
+	zombieData._pathRequested = false
 
 	-- set up touch damage
 	SetupTouchDamage(zombieData)
@@ -317,6 +433,10 @@ end
 -- removes a zombie from the AI loop and cleans up connections
 function ZombieAI.StopAI(zombieData: ZombieData)
 	zombieData.aiState = "dying"
+
+	-- clear path data
+	ClearPath(zombieData)
+	zombieData._pathRequested = false
 
 	-- swap-and-pop removal from registry (O(1))
 	local idx = zombieData._registryIndex
