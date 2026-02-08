@@ -1,14 +1,12 @@
 <div align="center">
-<img src="docs/robloxdashboard-banner.svg" alt="DashBlox" width="900">
+<img src="dashblox-banner.png" alt="DashBlox" width="900">
 
-*AI-powered Roblox development platform for shipping games faster from one unified workflow.*
+*AI-powered game development platform for shipping games faster from one unified workflow.*
 
 *Built for Code4Change @ the University of Florida.*
 
 [![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Express](https://img.shields.io/badge/Express-5.2-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
-[![Roblox](https://img.shields.io/badge/Roblox-Game%20Pipeline-000000?logo=roblox&logoColor=white)](https://create.roblox.com/)
 [![ElevenLabs](https://img.shields.io/badge/ElevenLabs-SFX%20%26%20Voice-111111)](https://elevenlabs.io/)
 [![Gemini via OpenRouter](https://img.shields.io/badge/Gemini-OpenRouter-4285F4)](https://openrouter.ai/)
 <a href="https://www.mlh.io/">
@@ -17,10 +15,10 @@
 </div>
 
 ## Inspiration
-Roblox game development is slow because teams constantly jump between **disconnected tools** for **3D assets, audio, planning, docs, and implementation**. We built **DashBlox** to eliminate that fragmentation and prove that a **single AI-native pipeline** can ship a **complete, polished game faster**.
+Game development is slow because teams constantly jump between **disconnected tools** for **3D assets, audio, planning, docs, and implementation**. We built **DashBlox** to eliminate that fragmentation and prove that a **single AI-native pipeline** can ship a **complete, polished game faster**.
 
 ## What it does
-**DashBlox** is an **AI game production system** built specifically for Roblox teams.
+**DashBlox** is an **AI game production system** built specifically for game dev teams.
 It lets us generate and ship **custom meshes**, generate **game-ready SFX and voices**, plan production in a built-in **Trello-style board**, and manage **dev docs** in one place.
 
 We used it to build a complete wave-based zombie game where:
