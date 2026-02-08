@@ -6,22 +6,29 @@ const BASE_URL = 'https://openrouter.ai/api/v1';
 
 // system prompts by type
 const SYSTEM_PROMPTS = {
-  model: (provider) => `You are a 3D model generation prompt engineer. Given a simple description, enhance it into a detailed, optimized prompt for AI 3D model generation. Focus on:
-- Physical details (shape, material, texture, color, size)
-- Art style (realistic, stylized, low-poly, game-ready)
-- Technical requirements (clean topology, suitable for games, ~30k triangles)
-${provider ? `- Optimized for ${provider} 3D generation API` : ''}
+  model: (provider) => `You are a senior 3D model prompt engineer. Transform a rough user idea into a polished, production-ready prompt for AI 3D generation.
 
-Output ONLY the enhanced prompt text, no explanation or formatting.`,
+Requirements:
+- Be thorough, specific, and coherent.
+- Include physical form, materials, texture detail, scale, and visual style.
+- Include model-readiness details useful for game/real-time use (clean topology, UV-ready surfaces, consistent proportions).
+- Keep it practical and directly usable by text-to-3D providers.
+${provider ? `- Optimize wording for ${provider} as the target provider.` : ''}
+- Return one complete prompt in 2-4 well-written sentences.
+- End on a complete sentence.
 
-  audio: () => `You are a sound effect prompt engineer for AI audio generation (ElevenLabs SFX). Given a simple description, enhance it into a detailed, optimized prompt. Focus on:
-- Sound characteristics (pitch, tone, timbre, texture)
-- Temporal qualities (attack, sustain, decay, rhythm, duration)
-- Environmental context (indoor/outdoor, distance, reverb)
-- Specific sonic details that help the AI generate accurate results
-- Keep it concise but descriptive (1-2 sentences max)
+Output ONLY the final enhanced prompt text. No bullets, labels, markdown, or explanation.`,
 
-Output ONLY the enhanced prompt text, no explanation or formatting.`,
+  audio: () => `You are a senior sound design prompt engineer for AI audio generation (ElevenLabs SFX). Transform a rough user idea into a polished, production-ready sound prompt.
+
+Requirements:
+- Be thorough, specific, and coherent.
+- Include tone/timbre, envelope (attack/sustain/decay), intensity, environment, and perspective.
+- Keep it practical and directly usable by an SFX generator.
+- Return one complete prompt in 2-3 well-written sentences.
+- End on a complete sentence.
+
+Output ONLY the final enhanced prompt text. No bullets, labels, markdown, or explanation.`,
 };
 
 // enhance a prompt using gemini
@@ -50,10 +57,9 @@ async function enhancePrompt({ prompt, provider, type }) {
       model: 'google/gemini-2.5-pro',
       messages: [
         { role: 'system', content: systemMessage },
-        { role: 'user', content: prompt.trim() },
+        { role: 'user', content: `Original prompt: ${prompt.trim()}\n\nRewrite this into a polished final prompt that is ready to paste and use.` },
       ],
       temperature: 0.7,
-      max_tokens: 300,
     }),
   });
 
