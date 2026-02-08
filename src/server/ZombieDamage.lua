@@ -288,6 +288,11 @@ function ZombieDamage.HandleExplosion(zombieModel: Model, stats: ZombieConfig.Zo
 			continue
 		end
 
+		-- skip downed players (invulnerable while downed)
+		if player:GetAttribute("IsDowned") then
+			continue
+		end
+
 		local playerRoot = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if not playerRoot then
 			continue

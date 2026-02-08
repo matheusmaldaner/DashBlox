@@ -173,6 +173,8 @@ local ReloadGunRemote = RemoteService.GetRemote("ReloadGun") :: RemoteEvent
 local GiveLoadoutRemote = RemoteService.GetRemote("GiveLoadout") :: RemoteEvent
 local ReloadAllWeaponsRemote = RemoteService.GetRemote("ReloadAllWeapons") :: RemoteEvent
 local DamageDealtRemote = RemoteService.GetRemote("DamageDealt") :: RemoteEvent
+local PlayerDownedRemote = RemoteService.GetRemote("PlayerDowned") :: RemoteEvent
+local PlayerRevivedRemote = RemoteService.GetRemote("PlayerRevived") :: RemoteEvent
 
 -- Player gun state
 local state = {
@@ -1271,6 +1273,20 @@ player.CharacterAdded:Connect(bindCharacter)
 if player.Character then
 	bindCharacter(player.Character)
 end
+
+-- disable shooting when local player is downed, re-enable on revive
+PlayerDownedRemote.OnClientEvent:Connect(function(data)
+	if data and data.playerId == player.UserId then
+		isAlive = false
+		state.isFiring = false
+	end
+end)
+
+PlayerRevivedRemote.OnClientEvent:Connect(function(data)
+	if data and data.playerId == player.UserId then
+		isAlive = true
+	end
+end)
 
 -- Render tracers from server-authoritative shot data
 -- For shotguns, this includes local player to ensure visual tracers match actual damage

@@ -117,6 +117,7 @@ local function HandleDoorPurchase(player: Player, door: Instance)
 
 	-- deduct coins
 	if not CoinUtility.Deduct(player, price) then
+		warn("[ZoneDoorService] Not enough coins:", player.Name, "| Has:", CoinUtility.GetCoins(player), "| Needs:", price)
 		return
 	end
 
