@@ -12,12 +12,18 @@
 local CollectionService = game:GetService("CollectionService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local ZoneDoorConfig = require(ReplicatedStorage.Modules.ZoneDoorConfig)
 local CoinUtility = require(script.Parent.CoinUtility)
 local RemoteService = require(ReplicatedStorage.Modules.RemoteService)
 
 local ZoneDoorOpenedRemote = RemoteService.GetRemote("ZoneDoorOpened") :: RemoteEvent
+
+-- bindable so other server scripts (ZombieSpawner) know when a zone unlocks
+local ZoneUnlockedEvent = Instance.new("BindableEvent")
+ZoneUnlockedEvent.Name = "ZoneUnlockedEvent"
+ZoneUnlockedEvent.Parent = ServerScriptService
 
 -- rate limiter for door purchases
 local checkDoorLimit, _cleanupDoorLimit = RemoteService.CreateRateLimiter(1.0)
@@ -130,6 +136,9 @@ local function HandleDoorPurchase(player: Player, door: Instance)
 
 	-- open the door
 	OpenDoor(door)
+
+	-- notify other server scripts that a zone was unlocked (for zombie spawns)
+	ZoneUnlockedEvent:Fire(label)
 
 	-- notify all clients
 	ZoneDoorOpenedRemote:FireAllClients({

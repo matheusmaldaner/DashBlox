@@ -31,7 +31,9 @@ local WaveStateSyncRemote = RemoteService.GetRemote("WaveStateSync") :: RemoteFu
 
 local activeZombies: { [Model]: ZombieAI.ZombieData } = {}
 local zombiePool: { [string]: { Model } } = {}
-local spawnPoints: { BasePart } = {}
+local allSpawnPoints: { BasePart } = {} -- every ZombieSpawn-tagged part
+local spawnPoints: { BasePart } = {}   -- only the currently active ones
+local unlockedZones: { [string]: boolean } = {}
 
 local waveState: WaveConfig.WaveState = {
 	round = 0,
@@ -251,13 +253,31 @@ local function ReleaseZombie(model: Model, zombieType: string)
 end
 
 --------------------------------------------------
--- Spawn Points (CollectionService tagged parts)
+-- Spawn Points (CollectionService tagged parts, zone-aware)
 --------------------------------------------------
 
+local function IsSpawnActive(spawn: BasePart): boolean
+	local zone = spawn:GetAttribute("Zone")
+	if not zone or typeof(zone) ~= "string" or zone == "" or zone == "Start" then
+		return true -- no zone or "Start" = always active
+	end
+	return unlockedZones[zone] == true
+end
+
+local function RefreshActiveSpawns()
+	spawnPoints = {}
+	for _, spawn in allSpawnPoints do
+		if IsSpawnActive(spawn) then
+			table.insert(spawnPoints, spawn)
+		end
+	end
+end
+
 local function DiscoverSpawnPoints()
-	spawnPoints = CollectionService:GetTagged("ZombieSpawn") :: { BasePart }
+	allSpawnPoints = CollectionService:GetTagged("ZombieSpawn") :: { BasePart }
+	RefreshActiveSpawns()
 	if #spawnPoints == 0 then
-		warn("[ZombieSpawner] no parts tagged 'ZombieSpawn' found, zombies will spawn at origin")
+		warn("[ZombieSpawner] no active ZombieSpawn points found, zombies will spawn at origin")
 	end
 end
 
@@ -453,6 +473,28 @@ WaveStateSyncRemote.OnServerInvoke = function(_player: Player)
 		restPhase = waveState.restPhase,
 	}
 end
+
+--------------------------------------------------
+-- Zone Unlock Listener
+--------------------------------------------------
+
+-- when a zone door is opened, activate spawn points in that zone
+local function OnZoneUnlocked(zoneName: string)
+	if typeof(zoneName) ~= "string" or zoneName == "" then
+		return
+	end
+	unlockedZones[zoneName] = true
+	RefreshActiveSpawns()
+	print("[ZombieSpawner] Zone unlocked:", zoneName, "| Active spawns:", #spawnPoints)
+end
+
+-- listen for the ZoneUnlockedEvent (created by ZoneDoorService)
+task.spawn(function()
+	local zoneEvent = ServerScriptService:WaitForChild("ZoneUnlockedEvent", 10) :: BindableEvent?
+	if zoneEvent then
+		zoneEvent.Event:Connect(OnZoneUnlocked)
+	end
+end)
 
 --------------------------------------------------
 -- Game Start
