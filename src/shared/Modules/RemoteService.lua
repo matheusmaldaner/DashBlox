@@ -147,6 +147,9 @@ local remoteRegistry: { [string]: string } = {
 	["PowerupActivated"] = "RemoteEvent",     -- server -> all clients: powerup effect started
 	["PowerupDeactivated"] = "RemoteEvent",   -- server -> all clients: powerup effect ended
 
+	-- Zone door system
+	["ZoneDoorOpened"] = "RemoteEvent",       -- server -> all clients: door purchased and opened
+
 	-- Cosmetics/Locker system
 	["GetCosmetics"] = "RemoteFunction", -- get player's cosmetic data
 	["EquipCosmetic"] = "RemoteFunction", -- equip item (returns success)
