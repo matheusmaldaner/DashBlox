@@ -42,7 +42,7 @@ local function FindBrokenPart(barricadeModel: Model, repairPart: BasePart): Base
 		if
 			descendant:IsA("BasePart")
 			and descendant ~= repairPart
-			and descendant.Name ~= "repair"
+			and descendant.Name ~= "Repair"
 			and not descendant.CanCollide
 		then
 			return descendant
@@ -109,7 +109,7 @@ end
 -- scan workspace for all existing "repair" parts
 local function DiscoverRepairZones()
 	for _, descendant in workspace:GetDescendants() do
-		if descendant:IsA("BasePart") and descendant.Name == "repair" then
+		if descendant:IsA("BasePart") and descendant.Name == "Repair" then
 			SetupRepairZone(descendant)
 		end
 	end
@@ -117,7 +117,7 @@ end
 
 -- handle barricades added at runtime
 workspace.DescendantAdded:Connect(function(descendant)
-	if descendant:IsA("BasePart") and descendant.Name == "repair" then
+	if descendant:IsA("BasePart") and descendant.Name == "Repair" then
 		-- defer so the parent model is fully parented
 		task.defer(function()
 			SetupRepairZone(descendant)
@@ -127,7 +127,7 @@ end)
 
 -- handle barricades removed at runtime
 workspace.DescendantRemoving:Connect(function(descendant)
-	if descendant:IsA("BasePart") and descendant.Name == "repair" then
+	if descendant:IsA("BasePart") and descendant.Name == "Repair" then
 		TeardownRepairZone(descendant)
 	end
 end)
