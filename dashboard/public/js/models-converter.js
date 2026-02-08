@@ -5,9 +5,6 @@
   let viewerScene, viewerCamera, viewerRenderer, viewerControls;
   let viewerInitialized = false;
 
-  const HISTORY_KEY = 'converterHistory';
-  const MAX_HISTORY = 20;
-
   document.addEventListener('DOMContentLoaded', () => {
     initConverter();
     renderHistory();
@@ -122,7 +119,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
 
-      addHistoryEntry(converterFile.name, targetFormat);
+      await addHistoryEntry(converterFile.name, targetFormat, converterFile.size);
       statusEl.innerHTML = `converted and downloading ${baseName}.${targetFormat}`;
       statusEl.className = 'converter-status';
     } catch (err) {
@@ -157,7 +154,7 @@
       }
 
       const data = await res.json();
-      addHistoryEntry(converterFile.name, 'roblox');
+      await addHistoryEntry(converterFile.name, 'roblox', converterFile.size);
       statusEl.innerHTML = `uploaded to roblox (operation: ${data.data.path || 'pending'})`;
       statusEl.className = 'converter-status';
     } catch (err) {
@@ -273,56 +270,57 @@
     showPreviewMessage('upload a glb/gltf file to preview');
   }
 
-  // -- conversion history (localStorage) --
+  // -- conversion history (mongodb) --
 
-  function getHistory() {
-    try {
-      return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function addHistoryEntry(filename, targetFormat) {
-    const history = getHistory();
+  async function addHistoryEntry(filename, targetFormat, fileSize) {
     const ext = filename.substring(filename.lastIndexOf('.') + 1).toUpperCase();
-    history.unshift({
-      name: filename,
-      from: ext,
-      to: targetFormat.toUpperCase(),
-      time: new Date().toISOString(),
-    });
-    if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    try {
+      await api.postJSON('/api/models/converter/history', {
+        name: filename,
+        from_format: ext,
+        to_format: targetFormat.toUpperCase(),
+        file_size: fileSize || 0,
+      });
+    } catch (err) {
+      console.warn('failed to save conversion history:', err.message);
+    }
     renderHistory();
   }
 
-  function renderHistory() {
+  async function renderHistory() {
     const list = document.getElementById('converterHistoryList');
     if (!list) return;
 
-    const history = getHistory();
-    if (!history.length) {
-      list.innerHTML = '<div class="converter-history-empty">no conversions yet</div>';
-      return;
-    }
+    try {
+      const res = await api.getJSON('/api/models/converter/history');
+      if (!res.success || !res.data.length) {
+        list.innerHTML = '<div class="converter-history-empty">no conversions yet</div>';
+        return;
+      }
 
-    list.innerHTML = history.map((item) => {
-      const time = new Date(item.time);
-      const timeStr = time.toLocaleDateString() + ' ' + time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      return `
-        <div class="converter-history-item">
-          <span class="converter-history-item-name">${escapeHtml(item.name)}</span>
-          <span class="converter-history-item-format">${item.from}</span>
-          <span class="converter-history-item-arrow">&rarr;</span>
-          <span class="converter-history-item-format">${item.to}</span>
-          <span class="converter-history-item-time">${timeStr}</span>
-        </div>`;
-    }).join('');
+      list.innerHTML = res.data.map((item) => {
+        const time = new Date(item.created_at);
+        const timeStr = time.toLocaleDateString() + ' ' + time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div class="converter-history-item">
+            <span class="converter-history-item-name">${escapeHtml(item.name)}</span>
+            <span class="converter-history-item-format">${item.from_format}</span>
+            <span class="converter-history-item-arrow">&rarr;</span>
+            <span class="converter-history-item-format">${item.to_format}</span>
+            <span class="converter-history-item-time">${timeStr}</span>
+          </div>`;
+      }).join('');
+    } catch {
+      list.innerHTML = '<div class="converter-history-empty">history unavailable</div>';
+    }
   }
 
-  function clearHistory() {
-    localStorage.removeItem(HISTORY_KEY);
+  async function clearHistory() {
+    try {
+      await api.deleteJSON('/api/models/converter/history');
+    } catch (err) {
+      console.warn('failed to clear history:', err.message);
+    }
     renderHistory();
   }
 

@@ -1,6 +1,7 @@
 // docs tab - markdown viewer/editor with table of contents
 
 (function () {
+  const HIDDEN_DOC_FILES = ['CLAUDE.md'];
   let projects = [];
   let currentProject = 0;
   let currentFile = '';
@@ -44,7 +45,10 @@
   async function loadProjects() {
     try {
       const res = await api.getJSON('/api/docs/projects');
-      projects = res.data;
+      projects = (res.data || []).map((project) => ({
+        ...project,
+        files: (project.files || []).filter((file) => !HIDDEN_DOC_FILES.includes(file)),
+      }));
 
       const select = document.getElementById('docsProjectSelect');
       select.innerHTML = '';
@@ -84,11 +88,24 @@
     if (defaultFile) {
       fileSelect.value = defaultFile;
       currentFile = defaultFile;
+      return;
     }
+
+    currentFile = '';
   }
 
   async function loadFile() {
-    if (!currentFile) return;
+    if (!currentFile) {
+      const contentArea = document.getElementById('docsContentArea');
+      const tocList = document.getElementById('docsTocList');
+      if (contentArea) {
+        contentArea.innerHTML = `<div class="docs-empty"><p>No docs available for this project.</p></div>`;
+      }
+      if (tocList) {
+        tocList.innerHTML = '';
+      }
+      return;
+    }
 
     const contentArea = document.getElementById('docsContentArea');
     contentArea.innerHTML = '<div class="docs-loading"><div class="spinner"></div></div>';

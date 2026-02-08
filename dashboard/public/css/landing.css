@@ -485,7 +485,7 @@ body {
   position: relative;
   z-index: 2;
   margin-top: -80vh;
-  padding-top: 15vh;
+  padding-top: 27vh;
   /* keep team clear of viewport before footer begins */
   padding-bottom: 90vh;
   background: transparent;
@@ -493,7 +493,7 @@ body {
 
 /* features section */
 .features {
-  padding: 200px 40px 180px;
+  padding: 320px 40px 180px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -1038,6 +1038,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-top: auto;
 }
 
 .team-link {
@@ -1173,7 +1174,7 @@ body {
   }
 
   .features {
-    padding: 120px 24px;
+    padding: 210px 24px 120px;
   }
 
   .features-glass {

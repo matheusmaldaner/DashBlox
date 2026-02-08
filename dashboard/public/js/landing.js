@@ -130,6 +130,7 @@ function initVideoScrub(initialTheme) {
   var videoContainer = document.querySelector('.video-container');
   if (!video || !canvas || !videoSection || !videoContainer) return;
 
+  var SCRUB_MIN_SEEK_DELTA = 1 / 30;
   var ctx = canvas.getContext('2d', { alpha: false });
   var scrubTrigger = null;
   var videoDuration = 0;
@@ -138,6 +139,101 @@ function initVideoScrub(initialTheme) {
   var displayW = 0;
   var displayH = 0;
   var currentDpr = 1;
+  var hasPrewarmedCurrentSource = false;
+  var isPrewarming = false;
+  var prewarmCallbacks = [];
+
+  function buildScrubTrigger() {
+    var progress = { value: 0 };
+    var scrubTween = gsap.to(progress, {
+      value: 1,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: videoSection,
+        // start pinning slightly earlier so media top doesn't tuck under the fixed nav
+        start: 'top top+=80',
+        // keep the media pinned until the full overlay sequence is consumed
+        endTrigger: '.content-overlay',
+        end: 'bottom bottom',
+        pin: videoContainer,
+        // keep following sections in normal flow so they layer over the pinned media
+        pinSpacing: false,
+        scrub: 0.5,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        onLeave: function () {
+          video.currentTime = videoDuration;
+          needsDraw = true;
+        },
+        onLeaveBack: function () {
+          video.currentTime = 0;
+          needsDraw = true;
+        },
+      },
+      onUpdate: function () {
+        var nextTime = progress.value * videoDuration;
+        if (Math.abs(nextTime - video.currentTime) >= SCRUB_MIN_SEEK_DELTA) {
+          video.currentTime = nextTime;
+        }
+      },
+    });
+    scrubTrigger = scrubTween.scrollTrigger;
+
+    if (!rafId) rafId = requestAnimationFrame(renderLoop);
+    needsDraw = true;
+    ScrollTrigger.refresh(true);
+  }
+
+  function prewarmVideoFrames(done) {
+    if (hasPrewarmedCurrentSource || !videoDuration) {
+      done();
+      return;
+    }
+    prewarmCallbacks.push(done);
+    if (isPrewarming) return;
+    isPrewarming = true;
+
+    var checkpoints = [0, 0.08, 0.24, 0.46, 0.7, 0.9, 0];
+    var index = 0;
+
+    function finish() {
+      isPrewarming = false;
+      hasPrewarmedCurrentSource = true;
+      video.currentTime = 0;
+      needsDraw = true;
+      prewarmCallbacks.splice(0).forEach(function (cb) { cb(); });
+    }
+
+    function next() {
+      if (index >= checkpoints.length) {
+        finish();
+        return;
+      }
+
+      var target = Math.max(0, Math.min(videoDuration - 0.001, checkpoints[index] * videoDuration));
+      index += 1;
+
+      if (Math.abs(video.currentTime - target) < 0.001) {
+        requestAnimationFrame(next);
+        return;
+      }
+
+      var onSeeked = function () {
+        needsDraw = true;
+        requestAnimationFrame(next);
+      };
+      video.addEventListener('seeked', onSeeked, { once: true });
+
+      try {
+        video.currentTime = target;
+      } catch (e) {
+        video.removeEventListener('seeked', onSeeked);
+        requestAnimationFrame(next);
+      }
+    }
+
+    next();
+  }
 
   // set canvas buffer to match container size with retina scaling
   function resizeCanvas() {
@@ -210,42 +306,11 @@ function initVideoScrub(initialTheme) {
 
     if (scrubTrigger) scrubTrigger.kill();
 
-    // use a proxy tween with scrub smoothing so the video eases
-    // into position rather than jumping frame-to-frame
-    var progress = { value: 0 };
-    var scrubTween = gsap.to(progress, {
-      value: 1,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: videoSection,
-        start: 'top top',
-        // keep the media pinned until the full overlay sequence is consumed
-        endTrigger: '.content-overlay',
-        end: 'bottom bottom',
-        pin: videoContainer,
-        // keep following sections in normal flow so they layer over the pinned media
-        pinSpacing: false,
-        scrub: 0.5,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onLeave: function () {
-          video.currentTime = videoDuration;
-          needsDraw = true;
-        },
-        onLeaveBack: function () {
-          video.currentTime = 0;
-          needsDraw = true;
-        },
-      },
-      onUpdate: function () {
-        video.currentTime = progress.value * videoDuration;
-      },
-    });
-    scrubTrigger = scrubTween.scrollTrigger;
-
     if (!rafId) rafId = requestAnimationFrame(renderLoop);
     needsDraw = true;
-    ScrollTrigger.refresh(true);
+
+    // pre-seek a few checkpoints once per source to reduce first-scroll decode hitching
+    prewarmVideoFrames(buildScrubTrigger);
   }
 
   // debounced resize handler
@@ -278,6 +343,10 @@ function initVideoScrub(initialTheme) {
       video.addEventListener('canplay', setupVideoScroll, { once: true });
       return;
     }
+
+    hasPrewarmedCurrentSource = false;
+    isPrewarming = false;
+    prewarmCallbacks = [];
 
     video.addEventListener('canplay', setupVideoScroll, { once: true });
     video.addEventListener('error', function () {
