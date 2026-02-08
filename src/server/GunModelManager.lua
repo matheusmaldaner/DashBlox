@@ -10,6 +10,17 @@ local GunModelManager = {}
 
 GunModelManager.EQUIPPED_GUN_NAME = "EquippedGun"
 
+-- Per-weapon weld offset overrides (applied after the base C0)
+-- Axes are post-rotation: X = forward/back, Y = left/right, Z = up/down
+local WeaponOffsets: { [string]: CFrame } = {
+	["PumpShotgun"] = CFrame.new(-1, 0, 0),     -- 2 studs forward
+	["TacticalShotgun"] = CFrame.new(-1, 0, 0),  -- 2 studs forward
+	["SMG"] = CFrame.new(-1, 0, 0),  -- 2 studs forward
+	["Sniper"] = CFrame.new(-1, 0, 0),  -- 2 studs forward
+	["Pistol"] = CFrame.new(-1, 0, 0),  -- 2 studs forward
+	["AR"] = CFrame.new(-1, 0, 0),  -- 2 studs forward
+}
+
 local function GetRightHand(character: Model): BasePart?
 	return (character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")) :: BasePart?
 end
@@ -147,7 +158,9 @@ function GunModelManager.AttachGunModel(player: Player, gunName: string)
 	weld.Name = "WeaponWeld"
 	weld.Part0 = rightHand
 	weld.Part1 = weaponPart :: BasePart
-	weld.C0 = CFrame.new(0, -0.2, -0.5) * CFrame.Angles(math.rad(-90), math.rad(-90), math.rad(0))
+	local baseC0 = CFrame.new(0, -0.2, -0.5) * CFrame.Angles(math.rad(-90), math.rad(-90), math.rad(0))
+	local offset = WeaponOffsets[gunName]
+	weld.C0 = if offset then baseC0 * offset else baseC0
 	weld.Parent = rightHand
 
 	weaponModel.Parent = character
