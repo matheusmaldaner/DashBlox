@@ -33,6 +33,8 @@ local cyclingGui: BillboardGui? = nil
 local cyclingLabel: TextLabel? = nil
 local resultGui: BillboardGui? = nil
 local lightBeamPart: Part? = nil
+local cyclingVFXBeam: Part? = nil
+local cyclingVFXParticles: Part? = nil
 
 --------------------------------------------------
 -- Helpers
@@ -62,6 +64,131 @@ local function GetRandomWeaponName(): (string, string)
 end
 
 --------------------------------------------------
+-- Cycling VFX (particle glow + light column)
+--------------------------------------------------
+
+-- creates particle glow and rising light column during weapon cycling
+local function CreateCyclingVFX(boxModel: Model)
+	local adornee = boxModel.PrimaryPart or boxModel:FindFirstChildWhichIsA("BasePart")
+	if not adornee then
+		return
+	end
+
+	local boxPos = adornee.Position
+
+	-- rising light column (tweens upward over cycling duration)
+	cyclingVFXBeam = Instance.new("Part")
+	local beam = cyclingVFXBeam :: Part
+	beam.Name = "CyclingBeam"
+	beam.Anchored = true
+	beam.CanCollide = false
+	beam.CanQuery = false
+	beam.Material = Enum.Material.Neon
+	beam.Color = Color3.fromRGB(0, 150, 255)
+	beam.Size = Vector3.new(0.3, 0, 0.3)
+	beam.Transparency = 0.4
+	beam.CFrame = CFrame.new(boxPos.X, boxPos.Y, boxPos.Z)
+	beam.Parent = workspace
+
+	local targetHeight = 40
+	TweenService:Create(beam, TweenInfo.new(
+		MysteryBoxConfig.CyclingDuration,
+		Enum.EasingStyle.Quad,
+		Enum.EasingDirection.Out
+	), {
+		Size = Vector3.new(0.3, targetHeight, 0.3),
+		CFrame = CFrame.new(boxPos.X, boxPos.Y + targetHeight / 2, boxPos.Z),
+	}):Play()
+
+	-- invisible container for particle emitters
+	cyclingVFXParticles = Instance.new("Part")
+	local particlePart = cyclingVFXParticles :: Part
+	particlePart.Name = "CyclingParticles"
+	particlePart.Anchored = true
+	particlePart.CanCollide = false
+	particlePart.CanQuery = false
+	particlePart.Transparency = 1
+	particlePart.Size = Vector3.new(2, 2, 2)
+	particlePart.CFrame = CFrame.new(boxPos + Vector3.new(0, 2, 0))
+	particlePart.Parent = workspace
+
+	-- sparkle emitter
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Rate = 40
+	emitter.Lifetime = NumberRange.new(0.5, 1.2)
+	emitter.Speed = NumberRange.new(3, 8)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.3),
+		NumberSequenceKeypoint.new(0.5, 0.6),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	emitter.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.3),
+		NumberSequenceKeypoint.new(0.7, 0.5),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 180, 255)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 200, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 100, 255)),
+	})
+	emitter.LightEmission = 1
+	emitter.LightInfluence = 0
+	emitter.Parent = particlePart
+
+	-- point light for ambient glow around the box
+	local glow = Instance.new("PointLight")
+	glow.Color = Color3.fromRGB(0, 150, 255)
+	glow.Brightness = 2
+	glow.Range = 15
+	glow.Parent = particlePart
+
+	-- pulse the glow brightness
+	task.spawn(function()
+		while particlePart and particlePart.Parent do
+			TweenService:Create(glow, TweenInfo.new(0.4), { Brightness = 4 }):Play()
+			task.wait(0.4)
+			if not particlePart or not particlePart.Parent then
+				break
+			end
+			TweenService:Create(glow, TweenInfo.new(0.4), { Brightness = 1.5 }):Play()
+			task.wait(0.4)
+		end
+	end)
+end
+
+-- cleans up cycling VFX with fade-out
+local function DestroyCyclingVFX()
+	if cyclingVFXBeam then
+		local beam = cyclingVFXBeam :: Part
+		TweenService:Create(beam, TweenInfo.new(0.5), { Transparency = 1 }):Play()
+		task.delay(0.5, function()
+			if beam and beam.Parent then
+				beam:Destroy()
+			end
+		end)
+		cyclingVFXBeam = nil
+	end
+
+	if cyclingVFXParticles then
+		local part = cyclingVFXParticles :: Part
+		-- stop emitting, let existing particles fade naturally
+		for _, child in part:GetChildren() do
+			if child:IsA("ParticleEmitter") then
+				child.Enabled = false
+			end
+		end
+		task.delay(1.5, function()
+			if part and part.Parent then
+				part:Destroy()
+			end
+		end)
+		cyclingVFXParticles = nil
+	end
+end
+
+--------------------------------------------------
 -- Weapon Cycling Animation
 --------------------------------------------------
 
@@ -69,6 +196,9 @@ end
 local function StartCyclingAnimation(boxModel: Model)
 	-- cleanup any existing
 	StopCyclingAnimation()
+
+	-- start particle glow and light column
+	CreateCyclingVFX(boxModel)
 
 	-- create billboard above the box
 	cyclingGui = Instance.new("BillboardGui")
@@ -92,6 +222,13 @@ local function StartCyclingAnimation(boxModel: Model)
 	label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	label.Parent = gui
 
+	-- outer glow stroke that shifts color per weapon rarity
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.Color = Color3.fromRGB(100, 180, 255)
+	stroke.Transparency = 0.3
+	stroke.Parent = label
+
 	-- cycling animation: flash through weapon names with decelerating speed
 	local flashCount = MysteryBoxConfig.CyclingFlashCount
 	local startInterval = MysteryBoxConfig.CyclingStartInterval
@@ -113,6 +250,12 @@ local function StartCyclingAnimation(boxModel: Model)
 			local label = cyclingLabel :: TextLabel
 			label.Text = displayName
 			label.TextColor3 = rarityColor
+
+			-- sync glow stroke color to current weapon rarity
+			local uiStroke = label:FindFirstChildOfClass("UIStroke")
+			if uiStroke then
+				uiStroke.Color = rarityColor
+			end
 
 			-- decelerate: lerp from start interval to end interval
 			local alpha = i / flashCount
@@ -165,11 +308,13 @@ local function ShowTeddyBear(boxModel: Model)
 end
 
 local function StopCyclingAnimation()
-	if cyclingGui then;
-		(cyclingGui :: BillboardGui):Destroy()
+	if cyclingGui then
+		local gui = cyclingGui :: BillboardGui
+		gui:Destroy()
 		cyclingGui = nil
 		cyclingLabel = nil
 	end
+	DestroyCyclingVFX()
 end
 
 --------------------------------------------------
@@ -222,8 +367,9 @@ local function ShowResult(boxModel: Model, gunName: string, rarity: string, isDu
 end
 
 local function HideResult()
-	if resultGui then;
-		(resultGui :: BillboardGui):Destroy()
+	if resultGui then
+		local gui = resultGui :: BillboardGui
+		gui:Destroy()
 		resultGui = nil
 	end
 end
@@ -276,8 +422,9 @@ local function CreateLightBeam(position: Vector3)
 end
 
 local function DestroyLightBeam()
-	if lightBeamPart then;
-		(lightBeamPart :: Part):Destroy()
+	if lightBeamPart then
+		local beam = lightBeamPart :: Part
+		beam:Destroy()
 		lightBeamPart = nil
 	end
 end
