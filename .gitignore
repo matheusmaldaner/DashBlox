@@ -11,6 +11,9 @@ coverage/
 *.rbxm
 *.rbxmx
 
+# uploads (generated audio/model files)
+uploads/
+
 # assets (large binary files)
 *.mp3
 *.fbx

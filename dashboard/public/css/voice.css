@@ -75,6 +75,13 @@
   letter-spacing: 0;
 }
 
+/* voice generate row */
+.voice-generate-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 /* voice results list */
 .voice-results {
   display: flex;

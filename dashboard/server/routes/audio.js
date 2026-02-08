@@ -3,8 +3,17 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const { generateSFX, generateTTS, listVoices, cloneVoice } = require('../services/elevenlabs');
 const AssetAudio = require('../models/AssetAudio');
+
+// ensure audio uploads directory exists
+const audioDir = path.join(__dirname, '..', '..', 'uploads', 'audio');
+if (!fs.existsSync(audioDir)) {
+  fs.mkdirSync(audioDir, { recursive: true });
+}
 
 // multer for voice clone file uploads (memory storage)
 const upload = multer({
@@ -37,13 +46,22 @@ router.post('/sfx', async (req, res, next) => {
   }
 });
 
-// POST /api/audio/sfx/save - save sfx metadata to mongodb
+// POST /api/audio/sfx/save - save sfx metadata + audio file to mongodb
 router.post('/sfx/save', async (req, res, next) => {
   try {
-    const { prompt, duration_seconds, prompt_influence, variation_count } = req.body;
+    const { prompt, duration_seconds, prompt_influence, variation_count, audio_data } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ success: false, error: 'prompt is required' });
+    }
+
+    // persist audio file to disk if provided
+    let filePath = '';
+    if (audio_data) {
+      const buffer = Buffer.from(audio_data, 'base64');
+      const fileName = `sfx-${crypto.randomUUID()}.mp3`;
+      fs.writeFileSync(path.join(audioDir, fileName), buffer);
+      filePath = `/uploads/audio/${fileName}`;
     }
 
     const asset = await AssetAudio.create({
@@ -52,6 +70,7 @@ router.post('/sfx/save', async (req, res, next) => {
       prompt,
       model: 'elevenlabs-sfx',
       duration_seconds: duration_seconds || 0,
+      file_path: filePath,
       tags: [`influence:${prompt_influence || 0.3}`, `variations:${variation_count || 10}`],
     });
 
@@ -82,13 +101,22 @@ router.post('/tts', async (req, res, next) => {
   }
 });
 
-// POST /api/audio/tts/save - save tts metadata to mongodb
+// POST /api/audio/tts/save - save tts metadata + audio file to mongodb
 router.post('/tts/save', async (req, res, next) => {
   try {
-    const { text, voice_id, voice_name, model_id } = req.body;
+    const { text, voice_id, voice_name, model_id, audio_data } = req.body;
 
     if (!text) {
       return res.status(400).json({ success: false, error: 'text is required' });
+    }
+
+    // persist audio file to disk if provided
+    let filePath = '';
+    if (audio_data) {
+      const buffer = Buffer.from(audio_data, 'base64');
+      const fileName = `tts-${crypto.randomUUID()}.mp3`;
+      fs.writeFileSync(path.join(audioDir, fileName), buffer);
+      filePath = `/uploads/audio/${fileName}`;
     }
 
     const asset = await AssetAudio.create({
@@ -98,6 +126,7 @@ router.post('/tts/save', async (req, res, next) => {
       voice_id,
       voice_name: voice_name || 'unknown',
       model: model_id || 'eleven_flash_v2_5',
+      file_path: filePath,
     });
 
     res.json({ success: true, data: asset });

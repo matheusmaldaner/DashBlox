@@ -163,14 +163,30 @@
     await Promise.all(promises);
     generateBtn.disabled = false;
 
-    // save metadata for successful generations
+    // save metadata + first audio blob for successful generations
     if (successCount > 0) {
       try {
+        // encode first successful voice result as base64
+        let audioBase64 = null;
+        for (const result of voiceResults) {
+          if (result.blob) {
+            const arrayBuffer = await result.blob.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let j = 0; j < bytes.length; j++) {
+              binary += String.fromCharCode(bytes[j]);
+            }
+            audioBase64 = btoa(binary);
+            break;
+          }
+        }
+
         await api.postJSON('/api/audio/tts/save', {
           text: lines.join(' | '),
           voice_id: voiceId,
           voice_name: voiceName,
           model_id: modelId,
+          audio_data: audioBase64,
         });
       } catch {
         // save is non-critical
