@@ -118,6 +118,14 @@ local remoteRegistry: { [string]: string } = {
 	["WaveCountdown"] = "RemoteEvent",   -- server -> all clients: rest period timer
 	["WaveStateSync"] = "RemoteFunction", -- client -> server: request current wave state
 
+	-- Mystery Box system
+	["MysteryBoxOpened"] = "RemoteEvent",     -- server -> all clients: box opened, start cycling anim
+	["MysteryBoxResult"] = "RemoteEvent",     -- server -> all clients: cycling done, reveal weapon
+	["MysteryBoxPickedUp"] = "RemoteEvent",   -- server -> all clients: player grabbed the weapon
+	["MysteryBoxExpired"] = "RemoteEvent",    -- server -> all clients: weapon sank back (not picked up)
+	["MysteryBoxRelocate"] = "RemoteEvent",   -- server -> all clients: teddy bear, box moving
+	["MysteryBoxReappear"] = "RemoteEvent",   -- server -> all clients: box appeared at new location
+
 	-- Cosmetics/Locker system
 	["GetCosmetics"] = "RemoteFunction", -- get player's cosmetic data
 	["EquipCosmetic"] = "RemoteFunction", -- equip item (returns success)
