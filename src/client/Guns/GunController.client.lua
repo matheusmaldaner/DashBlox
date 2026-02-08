@@ -920,6 +920,11 @@ local function Shoot()
 	-- Play fire sound (optimized local version - no 3D positioning for own shots)
 	AudioService.PlayWeaponFireLocal(state.currentGun)
 
+	-- Play firing animation (one-shot overlay on top of hold pose)
+	if AnimationService then
+		AnimationService.PlayFire()
+	end
+
 	-- Notify AmmoUI of ammo change
 	notifyAmmoUI("AmmoChanged", state.ammo)
 
