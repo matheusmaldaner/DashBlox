@@ -10,7 +10,7 @@ const asset3DSchema = new mongoose.Schema({
   enhanced_prompt: { type: String, default: '' },
   provider: {
     type: String,
-    enum: ['meshy', 'tripo', 'rodin', 'roblox-cube'],
+    enum: ['meshy', 'tripo', 'rodin', 'replicate', 'roblox-cube'],
     required: true,
   },
   provider_task_id: { type: String, default: '' },

@@ -286,11 +286,27 @@
 
   async function saveToHistory(prompt, duration, influence, variationCount) {
     try {
+      // encode first successful audio blob as base64 for server persistence
+      let audioBase64 = null;
+      for (let i = 0; i < audioData.length; i++) {
+        if (audioData[i] && audioData[i].blob) {
+          const arrayBuffer = await audioData[i].blob.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          let binary = '';
+          for (let j = 0; j < bytes.length; j++) {
+            binary += String.fromCharCode(bytes[j]);
+          }
+          audioBase64 = btoa(binary);
+          break;
+        }
+      }
+
       await api.postJSON('/api/audio/sfx/save', {
         prompt,
         duration_seconds: duration,
         prompt_influence: influence,
         variation_count: variationCount,
+        audio_data: audioBase64,
       });
       loadHistory();
     } catch (err) {
@@ -313,7 +329,7 @@
       list.innerHTML = res.data
         .map(
           (item) => `
-        <div class="history-item">
+        <div class="history-item ${item.file_path ? 'clickable' : ''}" data-file-path="${escapeHtml(item.file_path || '')}">
           <div class="history-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
           </div>
@@ -324,14 +340,59 @@
               <span>${formatDate(item.created_at)}</span>
             </div>
           </div>
+          ${item.file_path ? '<div class="history-item-play">' + playIcon + '</div>' : ''}
         </div>
       `
         )
         .join('');
+
+      // attach click handlers for playable history items
+      list.querySelectorAll('.history-item.clickable').forEach((el) => {
+        el.addEventListener('click', () => {
+          const filePath = el.dataset.filePath;
+          if (filePath) playHistoryItem(filePath, el);
+        });
+      });
     } catch {
       // history load is non-critical
       list.innerHTML = '<div class="history-empty">history unavailable</div>';
     }
+  }
+
+  function playHistoryItem(filePath, element) {
+    // stop any currently playing audio first
+    stopAllAudio();
+
+    const audio = new Audio(filePath);
+    audio.play();
+
+    const playBtn = element.querySelector('.history-item-play');
+    if (playBtn) {
+      playBtn.innerHTML = pauseIcon;
+      element.classList.add('playing');
+    }
+
+    currentlyPlaying = { audio, index: -1 };
+
+    audio.addEventListener('ended', () => {
+      if (playBtn) {
+        playBtn.innerHTML = playIcon;
+        element.classList.remove('playing');
+      }
+      currentlyPlaying = null;
+    });
+
+    // clicking again stops playback
+    element.addEventListener('click', function stopHandler() {
+      if (currentlyPlaying && currentlyPlaying.audio === audio) {
+        stopAllAudio();
+        if (playBtn) {
+          playBtn.innerHTML = playIcon;
+          element.classList.remove('playing');
+        }
+        element.removeEventListener('click', stopHandler);
+      }
+    }, { once: true });
   }
 
   function sleep(ms) {

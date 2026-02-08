@@ -170,6 +170,14 @@
   async function handleGenerate() {
     if (currentMode === 'image') return handleGenerateImage();
 
+    // replicate/trellis only supports image-to-3d
+    if (selectedProvider === 'replicate') {
+      const statusEl = document.getElementById('modelStatus');
+      statusEl.innerHTML = 'replicate/trellis only supports image-to-3d mode. switch to image mode.';
+      statusEl.className = 'model-status error';
+      return;
+    }
+
     const promptInput = document.getElementById('modelPrompt');
     const prompt = promptInput.value.trim();
     if (!prompt) { promptInput.focus(); return; }

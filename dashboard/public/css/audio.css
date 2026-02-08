@@ -96,15 +96,32 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
 }
 
-/* generate button */
+/* generate button - unified across sfx, voice, models */
 .generate-btn {
   align-self: flex-start;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  min-width: 140px;
+}
+
+.generate-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .generate-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+}
+
+.generate-btn:not(:disabled):active {
+  transform: translateY(0) scale(0.97);
 }
 
 /* status text */
@@ -392,4 +409,43 @@ input[type="range"]::-moz-range-thumb {
   padding: 32px;
   color: var(--text-muted);
   font-size: 13px;
+}
+
+/* clickable history items with audio playback */
+.history-item.clickable {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.history-item.clickable:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.history-item.playing {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.history-item-play {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.history-item-play svg {
+  width: 16px;
+  height: 16px;
+}
+
+.history-item.clickable:hover .history-item-play {
+  color: var(--accent);
+}
+
+.history-item.playing .history-item-play {
+  color: var(--accent);
 }

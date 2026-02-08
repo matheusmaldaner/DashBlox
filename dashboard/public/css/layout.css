@@ -92,6 +92,36 @@ header {
     0 0 20px rgba(16, 185, 129, 0.15);
 }
 
+/* settings button */
+.settings-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="light"] .settings-btn:hover {
+  box-shadow:
+    0 0 0 4px rgba(0, 0, 0, 0.04),
+    0 0 20px rgba(16, 185, 129, 0.15);
+}
+
 .theme-toggle .sun-icon {
   display: block;
 }

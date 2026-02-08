@@ -10,10 +10,11 @@ const { enhancePrompt } = require('../services/openrouter');
 const meshy = require('../services/meshy');
 const tripo = require('../services/tripo');
 const rodin = require('../services/rodin');
+const replicate = require('../services/replicate');
 const Asset3D = require('../models/Asset3D');
 
 // provider dispatch map
-const providers = { meshy, tripo, rodin };
+const providers = { meshy, tripo, rodin, replicate };
 
 // multer setup for image uploads
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
@@ -51,7 +52,7 @@ router.post('/generate', async (req, res, next) => {
 
     const selectedProvider = providers[provider];
     if (!selectedProvider) {
-      return res.status(400).json({ success: false, error: `unknown provider: ${provider}. use meshy, tripo, or rodin` });
+      return res.status(400).json({ success: false, error: `unknown provider: ${provider}. use meshy, tripo, rodin, or replicate` });
     }
 
     const textPrompt = enhanced_prompt || prompt;
@@ -64,6 +65,8 @@ router.post('/generate', async (req, res, next) => {
       result = await tripo.createTask({ prompt: textPrompt });
     } else if (provider === 'rodin') {
       result = await rodin.createTask({ prompt: textPrompt, negativePrompt: negative_prompt, tier, format, quality });
+    } else if (provider === 'replicate') {
+      result = await replicate.createTask({ prompt: textPrompt });
     }
 
     // save to mongodb
@@ -210,6 +213,11 @@ router.post('/generate-image', upload.single('image'), async (req, res, next) =>
         format,
         quality,
       });
+    } else if (provider === 'replicate') {
+      // replicate/trellis needs a url - use data url like meshy
+      const base64 = file.buffer.toString('base64');
+      const dataUrl = `data:${file.mimetype};base64,${base64}`;
+      result = await replicate.createImageTask({ imageUrl: dataUrl });
     }
 
     // save to mongodb
