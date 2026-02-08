@@ -182,6 +182,15 @@ local function CreateZombieModel(zombieType: string): Model
 	model:SetAttribute("IsZombie", true)
 	model:SetAttribute("ZombieType", zombieType)
 
+	-- highlight: visible through walls
+	local highlight = Instance.new("Highlight")
+	highlight.FillColor = stats.BodyColor
+	highlight.FillTransparency = 0.7
+	highlight.OutlineColor = stats.EyeGlow or stats.BodyColor
+	highlight.OutlineTransparency = 0
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.Parent = model
+
 	return model
 end
 
