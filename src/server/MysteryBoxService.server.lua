@@ -258,8 +258,9 @@ local function OnBoxTriggered(player: Player)
 	usesAtCurrentLocation += 1
 
 	-- disable prompt while in use
-	if boxPrompt then;
-		(boxPrompt :: ProximityPrompt).Enabled = false
+	if boxPrompt then
+		local prompt = boxPrompt :: ProximityPrompt
+		prompt.Enabled = false
 	end
 
 	-- check for teddy bear
@@ -286,8 +287,9 @@ local function OnBoxTriggered(player: Player)
 		isBoxRelocating = true
 
 		-- hide box
-		if boxModel then;
-			(boxModel :: Model):PivotTo(CFrame.new(0, -1000, 0))
+		if boxModel then
+			local model = boxModel :: Model
+			model:PivotTo(CFrame.new(0, -1000, 0))
 		end
 
 		-- delay, then reappear at new location
@@ -304,8 +306,9 @@ local function OnBoxTriggered(player: Player)
 		isBoxRelocating = false
 		isBoxInUse = false
 
-		if boxPrompt then;
-			(boxPrompt :: ProximityPrompt).Enabled = true
+		if boxPrompt then
+			local prompt = boxPrompt :: ProximityPrompt
+			prompt.Enabled = true
 		end
 
 		return
@@ -384,8 +387,9 @@ local function OnBoxTriggered(player: Player)
 		-- cooldown then re-enable
 		task.wait(MysteryBoxConfig.CooldownAfterUse)
 		isBoxInUse = false
-		if boxPrompt then;
-			(boxPrompt :: ProximityPrompt).Enabled = true
+		if boxPrompt then
+			local prompt = boxPrompt :: ProximityPrompt
+			prompt.Enabled = true
 		end
 	end)
 
@@ -408,8 +412,9 @@ local function OnBoxTriggered(player: Player)
 
 			task.wait(MysteryBoxConfig.CooldownAfterUse)
 			isBoxInUse = false
-			if boxPrompt then;
-				(boxPrompt :: ProximityPrompt).Enabled = true
+			if boxPrompt then
+				local prompt = boxPrompt :: ProximityPrompt
+				prompt.Enabled = true
 			end
 		end
 	end)
@@ -430,8 +435,9 @@ local function Initialize()
 	end
 
 	-- connect proximity prompt
-	if boxPrompt then;
-		(boxPrompt :: ProximityPrompt).Triggered:Connect(OnBoxTriggered)
+	if boxPrompt then
+		local prompt = boxPrompt :: ProximityPrompt
+		prompt.Triggered:Connect(OnBoxTriggered)
 	end
 
 	-- also watch for box model being added later (rojo sync)
@@ -442,8 +448,9 @@ local function Initialize()
 			if boxModel and #boxLocations > 0 then
 				MoveBoxToLocation(activeLocationIndex)
 			end
-			if boxPrompt then;
-				(boxPrompt :: ProximityPrompt).Triggered:Connect(OnBoxTriggered)
+			if boxPrompt then
+				local prompt = boxPrompt :: ProximityPrompt
+				prompt.Triggered:Connect(OnBoxTriggered)
 			end
 		end
 	end)
