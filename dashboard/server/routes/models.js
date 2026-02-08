@@ -12,6 +12,7 @@ const tripo = require('../services/tripo');
 const rodin = require('../services/rodin');
 const replicate = require('../services/replicate');
 const Asset3D = require('../models/Asset3D');
+const converter = require('../services/converter');
 
 // provider dispatch map
 const providers = { meshy, tripo, rodin, replicate };
@@ -170,12 +171,19 @@ router.get('/download/:taskId', async (req, res, next) => {
       return res.status(502).json({ success: false, error: 'failed to download from provider' });
     }
 
-    const contentType = fileRes.headers.get('content-type') || 'model/gltf-binary';
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="model.${format || 'glb'}"`);
-
     const arrayBuffer = await fileRes.arrayBuffer();
-    res.send(Buffer.from(arrayBuffer));
+    let outputBuffer = Buffer.from(arrayBuffer);
+
+    // convert if provider doesn't have the requested format natively
+    const requestedFormat = format || 'glb';
+    if (converter.isConversionNeeded(provider, requestedFormat)) {
+      outputBuffer = await converter.convertBuffer(outputBuffer, 'glb', requestedFormat);
+    }
+
+    const contentTypes = { glb: 'model/gltf-binary', fbx: 'application/octet-stream', obj: 'text/plain' };
+    res.setHeader('Content-Type', contentTypes[requestedFormat] || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="model.${requestedFormat}"`);
+    res.send(outputBuffer);
   } catch (err) {
     next(err);
   }
@@ -266,10 +274,19 @@ router.post('/upload-roblox', async (req, res, next) => {
     }
     const modelBuffer = Buffer.from(await fileRes.arrayBuffer());
 
-    // determine content type
-    const isGlb = model_url.includes('.glb') || model_url.includes('gltf');
-    const contentType = isGlb ? 'model/gltf-binary' : 'model/fbx';
-    const ext = isGlb ? 'glb' : 'fbx';
+    // determine source format and convert to fbx if needed (roblox only accepts fbx/obj)
+    const urlLower = model_url.toLowerCase();
+    let uploadFormat = 'glb';
+    if (urlLower.includes('.fbx')) uploadFormat = 'fbx';
+    else if (urlLower.includes('.obj')) uploadFormat = 'obj';
+
+    let uploadBuffer = modelBuffer;
+    if (uploadFormat === 'glb') {
+      uploadBuffer = await converter.convertBuffer(modelBuffer, 'glb', 'fbx');
+      uploadFormat = 'fbx';
+    }
+
+    const uploadContentType = uploadFormat === 'obj' ? 'model/obj' : 'model/fbx';
 
     // build multipart request for roblox open cloud
     const boundary = `----RobloxBoundary${Date.now()}`;
@@ -286,10 +303,10 @@ router.post('/upload-roblox', async (req, res, next) => {
       `--${boundary}${crlf}Content-Disposition: form-data; name="request"${crlf}Content-Type: application/json${crlf}${crlf}${metadata}${crlf}`
     );
     const fileHeader = Buffer.from(
-      `--${boundary}${crlf}Content-Disposition: form-data; name="fileContent"; filename="model.${ext}"${crlf}Content-Type: ${contentType}${crlf}${crlf}`
+      `--${boundary}${crlf}Content-Disposition: form-data; name="fileContent"; filename="model.${uploadFormat}"${crlf}Content-Type: ${uploadContentType}${crlf}${crlf}`
     );
     const endBoundary = Buffer.from(`${crlf}--${boundary}--${crlf}`);
-    const body = Buffer.concat([metaPart, fileHeader, modelBuffer, endBoundary]);
+    const body = Buffer.concat([metaPart, fileHeader, uploadBuffer, endBoundary]);
 
     const robloxRes = await fetch('https://apis.roblox.com/assets/v1/assets', {
       method: 'POST',
@@ -312,6 +329,47 @@ router.post('/upload-roblox', async (req, res, next) => {
     const robloxData = await robloxRes.json();
 
     res.json({ success: true, data: robloxData });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/models/convert - upload a model file and convert to a different format
+const modelUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50mb for 3d models
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['.glb', '.gltf', '.fbx', '.obj'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, allowed.includes(ext));
+  },
+});
+
+router.post('/convert', modelUpload.single('model'), async (req, res, next) => {
+  try {
+    const file = req.file;
+    const { target_format } = req.body;
+
+    if (!file) {
+      return res.status(400).json({ success: false, error: 'model file is required (glb, gltf, fbx, obj)' });
+    }
+
+    if (!target_format || !['fbx', 'obj'].includes(target_format)) {
+      return res.status(400).json({ success: false, error: 'target_format must be fbx or obj' });
+    }
+
+    const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+    if (ext === target_format) {
+      return res.status(400).json({ success: false, error: `file is already in ${target_format} format` });
+    }
+
+    const outputBuffer = await converter.convertBuffer(file.buffer, ext, target_format);
+
+    const baseName = path.basename(file.originalname, path.extname(file.originalname));
+    const contentTypes = { fbx: 'application/octet-stream', obj: 'text/plain' };
+    res.setHeader('Content-Type', contentTypes[target_format] || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${baseName}.${target_format}"`);
+    res.send(outputBuffer);
   } catch (err) {
     next(err);
   }

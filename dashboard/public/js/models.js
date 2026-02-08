@@ -327,16 +327,44 @@
 
   async function handleDownload(format) {
     if (!currentTask) return;
-    const params = new URLSearchParams({ provider: currentTask.provider, format: format || 'glb' });
+    const statusEl = document.getElementById('modelStatus');
+    const requestedFormat = format || 'glb';
+    const params = new URLSearchParams({ provider: currentTask.provider, format: requestedFormat });
     if (currentTask.subscriptionKey) params.set('subscription_key', currentTask.subscriptionKey);
 
     const url = `/api/models/download/${currentTask.taskId}?${params}`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `model.${format || 'glb'}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+
+    // show converting status for non-glb formats on glb-only providers
+    const needsConversion = requestedFormat !== 'glb' && currentTask.provider !== 'rodin';
+    if (needsConversion) {
+      statusEl.innerHTML = '<div class="spinner"></div> converting to ' + requestedFormat.toUpperCase() + '...';
+      statusEl.className = 'model-status';
+    }
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'download failed' }));
+        throw new Error(err.error || 'download failed');
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `model.${requestedFormat}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+
+      if (needsConversion) {
+        statusEl.innerHTML = 'conversion complete - downloading ' + requestedFormat.toUpperCase();
+        statusEl.className = 'model-status';
+      }
+    } catch (err) {
+      statusEl.innerHTML = `download failed: ${err.message}`;
+      statusEl.className = 'model-status error';
+    }
   }
 
   async function handleUploadRoblox() {
@@ -350,7 +378,7 @@
     const statusEl = document.getElementById('modelStatus');
     const robloxBtn = document.getElementById('modelUploadRoblox');
     robloxBtn.disabled = true;
-    statusEl.innerHTML = '<div class="spinner"></div> uploading to roblox...';
+    statusEl.innerHTML = '<div class="spinner"></div> converting and uploading to roblox...';
     statusEl.className = 'model-status';
 
     try {

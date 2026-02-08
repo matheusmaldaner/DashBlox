@@ -225,6 +225,115 @@
   height: 14px;
 }
 
+/* file converter */
+.model-converter {
+  margin-top: 32px;
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+  margin-bottom: 8px;
+}
+
+.model-converter h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.model-converter h3 svg {
+  width: 18px;
+  height: 18px;
+}
+
+.converter-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.converter-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  color: var(--text-muted);
+}
+
+.converter-upload-area:hover,
+.converter-upload-area.dragover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.converter-upload-area input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.converter-upload-area p {
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.converter-upload-area span {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.converter-file-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.converter-file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.converter-actions {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.converter-actions .input-group {
+  flex: 1;
+}
+
+.converter-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.converter-status .spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.converter-status.error {
+  color: var(--danger);
+}
+
 /* model history */
 .model-history {
   margin-top: 32px;

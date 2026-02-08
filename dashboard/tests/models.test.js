@@ -24,6 +24,17 @@ jest.mock('../server/services/rodin', () => ({
   downloadResults: jest.fn(),
 }));
 
+jest.mock('../server/services/replicate', () => ({
+  createTask: jest.fn(),
+  getStatus: jest.fn(),
+}));
+
+jest.mock('../server/services/converter', () => ({
+  convertBuffer: jest.fn().mockResolvedValue(Buffer.from('converted-model-data')),
+  isConversionNeeded: jest.fn().mockReturnValue(false),
+  checkAssimpInstalled: jest.fn().mockResolvedValue(true),
+}));
+
 jest.mock('../server/models/Asset3D', () => ({
   create: jest.fn(),
   find: jest.fn(() => ({
@@ -41,6 +52,7 @@ const meshy = require('../server/services/meshy');
 const tripo = require('../server/services/tripo');
 const rodin = require('../server/services/rodin');
 const Asset3D = require('../server/models/Asset3D');
+const converter = require('../server/services/converter');
 const modelsRouter = require('../server/routes/models');
 
 function createApp() {
@@ -268,5 +280,119 @@ describe('POST /api/models/generate-image', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.taskId).toBe('meshy-img-1');
     expect(res.body.data.assetId).toBe('asset-img-1');
+  });
+});
+
+describe('model format conversion in download', () => {
+  const app = createApp();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // mock global fetch for download proxy
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => 'model/gltf-binary' },
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    });
+  });
+
+  afterEach(() => {
+    delete global.fetch;
+  });
+
+  test('converts when meshy provider and fbx format requested', async () => {
+    converter.isConversionNeeded.mockReturnValue(true);
+    meshy.getStatus.mockResolvedValue({
+      taskId: 'meshy-task-1',
+      status: 'ready',
+      modelUrls: { glb: 'https://example.com/model.glb' },
+    });
+
+    const res = await request(app)
+      .get('/api/models/download/meshy-task-1?provider=meshy&format=fbx');
+
+    expect(res.status).toBe(200);
+    expect(converter.isConversionNeeded).toHaveBeenCalledWith('meshy', 'fbx');
+    expect(converter.convertBuffer).toHaveBeenCalledWith(
+      expect.any(Buffer), 'glb', 'fbx'
+    );
+  });
+
+  test('skips conversion for rodin with fbx format', async () => {
+    converter.isConversionNeeded.mockReturnValue(false);
+    rodin.downloadResults.mockResolvedValue({
+      fbx: 'https://example.com/model.fbx',
+      glb: 'https://example.com/model.glb',
+    });
+
+    const res = await request(app)
+      .get('/api/models/download/rodin-task-1?provider=rodin&format=fbx');
+
+    expect(res.status).toBe(200);
+    expect(converter.isConversionNeeded).toHaveBeenCalledWith('rodin', 'fbx');
+    expect(converter.convertBuffer).not.toHaveBeenCalled();
+  });
+
+  test('skips conversion for meshy with glb format', async () => {
+    converter.isConversionNeeded.mockReturnValue(false);
+    meshy.getStatus.mockResolvedValue({
+      taskId: 'meshy-task-1',
+      status: 'ready',
+      modelUrls: { glb: 'https://example.com/model.glb' },
+    });
+
+    const res = await request(app)
+      .get('/api/models/download/meshy-task-1?provider=meshy&format=glb');
+
+    expect(res.status).toBe(200);
+    expect(converter.convertBuffer).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/models/convert', () => {
+  const app = createApp();
+
+  test('returns 400 when no file is uploaded', async () => {
+    const res = await request(app)
+      .post('/api/models/convert')
+      .field('target_format', 'fbx');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/model file is required/);
+  });
+
+  test('returns 400 for missing target_format', async () => {
+    const buf = Buffer.from('fake model data');
+    const res = await request(app)
+      .post('/api/models/convert')
+      .attach('model', buf, { filename: 'test.glb' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/target_format/);
+  });
+
+  test('returns 400 when source and target formats match', async () => {
+    const buf = Buffer.from('fake model data');
+    const res = await request(app)
+      .post('/api/models/convert')
+      .attach('model', buf, { filename: 'test.fbx' })
+      .field('target_format', 'fbx');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/already in fbx format/);
+  });
+
+  test('converts glb to fbx successfully', async () => {
+    converter.convertBuffer.mockResolvedValue(Buffer.from('converted-fbx'));
+
+    const buf = Buffer.from('fake glb data');
+    const res = await request(app)
+      .post('/api/models/convert')
+      .attach('model', buf, { filename: 'zombie.glb' })
+      .field('target_format', 'fbx');
+
+    expect(res.status).toBe(200);
+    expect(converter.convertBuffer).toHaveBeenCalledWith(expect.any(Buffer), 'glb', 'fbx');
+    expect(res.headers['content-disposition']).toContain('zombie.fbx');
   });
 });
