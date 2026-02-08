@@ -15,7 +15,7 @@ export type PowerupStats = {
 	IsGlobal: boolean,   -- true = affects all players, false = collector only
 }
 
-PowerupConfig.Powerups: { [string]: PowerupStats } = {
+PowerupConfig.Powerups = {
 	["MaxAmmo"] = {
 		Name = "MaxAmmo",
 		DisplayName = "Max Ammo",
@@ -81,7 +81,7 @@ PowerupConfig.Powerups: { [string]: PowerupStats } = {
 PowerupConfig.DropChance = 0.03
 
 -- weighted table for which powerup drops (higher = more likely)
-PowerupConfig.DropWeights: { [string]: number } = {
+PowerupConfig.DropWeights = {
 	["MaxAmmo"] = 25,
 	["InstaKill"] = 20,
 	["DoublePoints"] = 25,

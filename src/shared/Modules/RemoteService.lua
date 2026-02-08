@@ -98,6 +98,9 @@ local remoteRegistry: { [string]: string } = {
 	["DamageDealt"] = "RemoteEvent",
 	["DamageTaken"] = "RemoteEvent",
 
+	-- Trash pickup
+	["TrashPickedUp"] = "RemoteEvent", -- server -> client: coin popup feedback
+
 	-- Team/party system
 	["TeamAssigned"] = "RemoteEvent", -- sent to player when assigned to a team
 	["TeammateStatsChanged"] = "RemoteEvent", -- teammate health/shield updates
