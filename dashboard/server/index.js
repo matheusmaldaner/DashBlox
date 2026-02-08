@@ -35,6 +35,11 @@ app.use('/api/docs', docsRoutes);
 app.use('/api/board', boardRoutes);
 app.use('/api/settings', settingsRoutes);
 
+// serve dashboard at /dashboard
+app.get('/dashboard', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));
+});
+
 // health check
 app.get('/api/health', (_req, res) => {
   res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });
