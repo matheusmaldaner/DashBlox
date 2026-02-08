@@ -211,6 +211,11 @@ local function CachePlayerPositions()
 			continue
 		end
 
+		-- skip downed players (invulnerable, zombies ignore them)
+		if player:GetAttribute("IsDowned") then
+			continue
+		end
+
 		local rootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if not rootPart then
 			continue
@@ -342,6 +347,11 @@ local function SetupTouchDamage(zombieData: ZombieData)
 
 		local player = GetPlayerFromPart(hit)
 		if not player then
+			return
+		end
+
+		-- skip downed players (invulnerable while downed)
+		if player:GetAttribute("IsDowned") then
 			return
 		end
 

@@ -153,6 +153,12 @@ local remoteRegistry: { [string]: string } = {
 	-- Zone door system
 	["ZoneDoorOpened"] = "RemoteEvent",       -- server -> all clients: door purchased and opened
 
+	-- Downed/revive system
+	["PlayerDowned"] = "RemoteEvent",         -- server -> all clients: player went down
+	["PlayerRevived"] = "RemoteEvent",        -- server -> all clients: player was revived
+	["BleedoutUpdate"] = "RemoteEvent",       -- server -> downed client: timer tick
+	["RequestSelfRevive"] = "RemoteEvent",    -- client -> server: use QuickRevive to self-revive
+
 	-- Cosmetics/Locker system
 	["GetCosmetics"] = "RemoteFunction", -- get player's cosmetic data
 	["EquipCosmetic"] = "RemoteFunction", -- equip item (returns success)

@@ -369,6 +369,12 @@ EndRound = function()
 	waveState.restPhase = true
 	local round = waveState.round
 
+	-- notify DownedService to revive downed players and respawn dead players
+	local roundEndedBindable = ServerScriptService:FindFirstChild("RoundEndedBindable") :: BindableEvent?
+	if roundEndedBindable then
+		roundEndedBindable:Fire()
+	end
+
 	WaveCompletedRemote:FireAllClients({
 		round = round,
 	})
