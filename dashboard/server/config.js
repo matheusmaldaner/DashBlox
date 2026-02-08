@@ -1,7 +1,7 @@
 // environment variables and constants
 
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
 
 module.exports = {
   port: process.env.PORT || 3000,

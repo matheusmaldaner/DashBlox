@@ -26,16 +26,14 @@
       });
     });
 
-    // provider toggle
-    const providerBtns = document.querySelectorAll('.provider-toggle button');
-    providerBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        providerBtns.forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedProvider = btn.dataset.provider;
+    // provider dropdown
+    const providerSelect = document.getElementById('modelProviderSelect');
+    if (providerSelect) {
+      providerSelect.addEventListener('change', () => {
+        selectedProvider = providerSelect.value;
         updateQualityVisibility();
       });
-    });
+    }
 
     // enhance button
     const enhanceBtn = document.getElementById('modelEnhanceBtn');
@@ -75,9 +73,9 @@
   }
 
   function updateQualityVisibility() {
-    const qualityGroup = document.getElementById('modelQualityGroup');
-    if (qualityGroup) {
-      qualityGroup.style.display = selectedProvider === 'rodin' ? '' : 'none';
+    const qualitySelect = document.getElementById('modelQuality');
+    if (qualitySelect) {
+      qualitySelect.style.display = selectedProvider === 'rodin' ? '' : 'none';
     }
   }
 
@@ -170,11 +168,15 @@
   async function handleGenerate() {
     if (currentMode === 'image') return handleGenerateImage();
 
-    // replicate/trellis only supports image-to-3d
+    // trellis only supports image-to-3d, auto-switch to image mode
     if (selectedProvider === 'replicate') {
-      const statusEl = document.getElementById('modelStatus');
-      statusEl.innerHTML = 'replicate/trellis only supports image-to-3d mode. switch to image mode.';
-      statusEl.className = 'model-status error';
+      const imageBtn = document.getElementById('modelModeImage');
+      if (imageBtn) {
+        imageBtn.click();
+        const statusEl = document.getElementById('modelStatus');
+        statusEl.innerHTML = 'trellis only supports image-to-3d. switched to image mode - upload an image to continue.';
+        statusEl.className = 'model-status';
+      }
       return;
     }
 

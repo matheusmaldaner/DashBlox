@@ -74,7 +74,8 @@
 .docs-layout {
   display: flex;
   gap: 20px;
-  min-height: calc(100vh - 220px);
+  margin-top: 16px;
+  min-height: calc(100vh - 240px);
 }
 
 /* table of contents sidebar */

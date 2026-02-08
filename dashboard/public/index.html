@@ -66,6 +66,16 @@
       </svg>
       Models
     </button>
+    <button class="tab-btn" data-tab="converter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="16 3 21 3 21 8"/>
+        <line x1="4" y1="20" x2="21" y2="3"/>
+        <polyline points="21 16 21 21 16 21"/>
+        <line x1="15" y1="15" x2="21" y2="21"/>
+        <line x1="4" y1="4" x2="9" y2="9"/>
+      </svg>
+      Converter
+    </button>
     <button class="tab-btn" data-tab="audio">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -170,33 +180,27 @@
           <div id="enhancedPromptText"></div>
         </div>
 
-        <div class="model-options-row">
-          <div class="input-group">
-            <label>provider</label>
-            <div class="provider-toggle">
-              <button class="active" data-provider="meshy">Meshy</button>
-              <button data-provider="tripo">Tripo3D</button>
-              <button data-provider="rodin">Rodin</button>
-              <button data-provider="replicate">Replicate</button>
-            </div>
-          </div>
+        <div class="model-generate-row">
+          <select class="select model-provider-select" id="modelProviderSelect">
+            <option value="meshy">Meshy</option>
+            <option value="tripo">Tripo3D</option>
+            <option value="rodin">Rodin</option>
+            <option value="replicate">Replicate - Trellis (image-to-3d)</option>
+          </select>
 
           <!-- quality tier (rodin) -->
-          <div class="input-group model-quality-group" id="modelQualityGroup" style="display: none;">
-            <label for="modelQuality">quality</label>
-            <select class="select" id="modelQuality">
-              <option value="Sketch">sketch</option>
-              <option value="Regular" selected>regular</option>
-              <option value="Detail">detail</option>
-              <option value="Smooth">smooth</option>
-            </select>
-          </div>
+          <select class="select model-quality-select" id="modelQuality" style="display: none;">
+            <option value="Sketch">sketch</option>
+            <option value="Regular" selected>regular</option>
+            <option value="Detail">detail</option>
+            <option value="Smooth">smooth</option>
+          </select>
 
           <button class="btn btn-primary generate-btn" id="modelGenerateBtn">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
             </svg>
-            generate 3d model
+            generate
           </button>
         </div>
 
@@ -241,8 +245,24 @@
         </button>
       </div>
 
-      <!-- file converter -->
-      <div class="model-converter">
+      <!-- model history -->
+      <div class="model-history">
+        <h3>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          recent generations
+        </h3>
+        <div class="model-history-grid" id="modelHistoryGrid">
+          <div class="model-history-empty">no previous generations</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- converter tab -->
+    <div class="tab-content" id="tab-converter">
+      <div class="converter-panel glass-panel">
         <h3>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="16 3 21 3 21 8"/>
@@ -253,6 +273,7 @@
           </svg>
           convert model file
         </h3>
+        <p class="converter-desc">convert 3d model files between formats for roblox compatibility</p>
         <div class="converter-content">
           <div class="converter-upload-area" id="converterUploadArea">
             <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -285,20 +306,6 @@
             </button>
           </div>
           <div class="converter-status" id="converterStatus"></div>
-        </div>
-      </div>
-
-      <!-- model history -->
-      <div class="model-history">
-        <h3>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          recent generations
-        </h3>
-        <div class="model-history-grid" id="modelHistoryGrid">
-          <div class="model-history-empty">no previous generations</div>
         </div>
       </div>
     </div>
