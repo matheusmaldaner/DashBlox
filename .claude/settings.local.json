@@ -17,7 +17,13 @@
       "WebFetch(domain:create.roblox.com)",
       "Bash(lua:*)",
       "Bash(dir /s /b:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(node -c:*)",
+      "Bash(node:*)",
+      "Bash(node -e:*)",
+      "Bash(ffprobe:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)"
     ],
     "deny": []
   },

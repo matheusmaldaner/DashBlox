@@ -417,7 +417,12 @@
       .map((item) => {
         const statusClass = item.status === 'ready' ? 'completed' : item.status === 'error' ? 'failed' : 'processing';
         let thumbHtml;
-        if (item.thumbnail_path && item.thumbnail_path.endsWith('.mp4')) {
+
+        // use model-viewer for ready items that have a GLB file
+        if (item.status === 'ready' && item.file_path) {
+          const posterAttr = item.thumbnail_path ? ` poster="${escapeHtml(item.thumbnail_path)}"` : '';
+          thumbHtml = `<model-viewer src="${escapeHtml(item.file_path)}" auto-rotate auto-rotate-delay="0" rotation-per-second="30deg" camera-controls="pan" disable-zoom interaction-prompt="none" loading="lazy"${posterAttr} shadow-intensity="0.3" environment-image="neutral" style="width:100%;height:100%;background:transparent;"></model-viewer>`;
+        } else if (item.thumbnail_path && item.thumbnail_path.endsWith('.mp4')) {
           thumbHtml = `<video src="${escapeHtml(item.thumbnail_path)}" autoplay loop muted playsinline></video>`;
         } else if (item.thumbnail_path) {
           thumbHtml = `<img src="${escapeHtml(item.thumbnail_path)}" alt="thumbnail">`;

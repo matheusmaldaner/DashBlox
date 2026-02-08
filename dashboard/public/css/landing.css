@@ -387,11 +387,28 @@ body {
   50% { transform: translateY(8px); }
 }
 
+.hero-video-runway {
+  position: relative;
+  height: 30vh;
+  background: #fff;
+}
+
+.hero-video-runway::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12vh;
+  height: 12vh;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent 0%, #fff 100%);
+}
+
 /* video section - no fixed height; scrolltrigger manages pin spacing */
 .video-section {
   position: relative;
   background: #fff;
-  padding-top: 80px;
+  isolation: isolate;
 }
 
 [data-theme="dark"] .video-section {
@@ -468,19 +485,99 @@ body {
   position: relative;
   z-index: 2;
   margin-top: -80vh;
-  padding-top: 80vh;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, var(--bg-primary) 60vh);
-}
-
-[data-theme="light"] .content-overlay {
-  background: linear-gradient(to bottom, rgba(245, 245, 247, 0) 0%, var(--bg-primary) 60vh);
+  padding-top: 15vh;
+  /* keep team clear of viewport before footer begins */
+  padding-bottom: 90vh;
+  background: transparent;
 }
 
 /* features section */
 .features {
-  padding: 140px 40px;
+  padding: 200px 40px 180px;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.features-glass {
+  position: relative;
+  padding: 56px 48px 56px;
+  border-radius: 32px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.features-glass::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 30%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.2) 70%,
+    transparent 100%
+  );
+}
+
+.features-glass::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(52, 211, 153, 0.04) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+[data-theme="light"] .features-glass {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .features-glass::before {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.7) 30%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.7) 70%,
+    transparent 100%
+  );
+}
+
+[data-theme="light"] .features-glass::after {
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(16, 185, 129, 0.05) 0%,
+    transparent 50%
+  );
 }
 
 .section-title {
@@ -601,7 +698,7 @@ body {
 
 /* about section */
 .about {
-  padding: 120px 40px;
+  padding: 180px 40px;
   max-width: 1100px;
   margin: 0 auto;
 }
@@ -775,7 +872,7 @@ body {
 
 /* team section */
 .team {
-  padding: 120px 40px 80px;
+  padding: 180px 40px 140px;
   max-width: 1000px;
   margin: 0 auto;
   text-align: center;
@@ -974,8 +1071,27 @@ body {
 
 /* footer */
 .landing-footer {
-  padding: 100px 40px 40px;
+  position: relative;
+  z-index: 3;
+  padding: 120px 40px 48px;
+  background: var(--bg-primary);
   text-align: center;
+}
+
+.landing-footer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -28vh;
+  height: 28vh;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, var(--bg-primary) 100%);
+  pointer-events: none;
+}
+
+.landing-footer > * {
+  position: relative;
+  z-index: 1;
 }
 
 .footer-cta {
@@ -1057,7 +1173,12 @@ body {
   }
 
   .features {
-    padding: 80px 24px;
+    padding: 120px 24px;
+  }
+
+  .features-glass {
+    padding: 40px 24px;
+    border-radius: 24px;
   }
 
   .features-grid {
@@ -1065,7 +1186,7 @@ body {
   }
 
   .about {
-    padding: 80px 24px;
+    padding: 120px 24px;
   }
 
   .about-content {
@@ -1079,7 +1200,7 @@ body {
   }
 
   .team {
-    padding: 80px 24px;
+    padding: 120px 24px;
   }
 
   .team-grid {
@@ -1096,7 +1217,12 @@ body {
   }
 
   .landing-footer {
-    padding: 80px 24px 30px;
+    padding: 96px 24px 36px;
+  }
+
+  .landing-footer::before {
+    top: -20vh;
+    height: 20vh;
   }
 }
 

@@ -210,8 +210,8 @@ function initVideoScrub(initialTheme) {
 
     if (scrubTrigger) scrubTrigger.kill();
 
-    // video scrubs across the entire video-section scroll distance
-    // (spacer + content-sections that slide over the sticky video)
+    // use a proxy tween with scrub smoothing so the video eases
+    // into position rather than jumping frame-to-frame
     var progress = { value: 0 };
     var scrubTween = gsap.to(progress, {
       value: 1,
@@ -219,8 +219,14 @@ function initVideoScrub(initialTheme) {
       scrollTrigger: {
         trigger: videoSection,
         start: 'top top',
+        // keep the media pinned until the full overlay sequence is consumed
+        endTrigger: '.content-overlay',
         end: 'bottom bottom',
+        pin: videoContainer,
+        // keep following sections in normal flow so they layer over the pinned media
+        pinSpacing: false,
         scrub: 0.5,
+        anticipatePin: 1,
         invalidateOnRefresh: true,
         onLeave: function () {
           video.currentTime = videoDuration;

@@ -1,0 +1,302 @@
+/* converter tab - file upload, format conversion, 3d preview */
+
+/* two-column layout */
+.converter-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.converter-panel h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.converter-panel h3 svg {
+  width: 18px;
+  height: 18px;
+}
+
+.converter-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.converter-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* upload area */
+.converter-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  color: var(--text-muted);
+}
+
+.converter-upload-area:hover,
+.converter-upload-area.dragover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.converter-upload-area input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.converter-upload-area p {
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.converter-upload-area span {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* file info bar */
+.converter-file-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.converter-file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* actions row */
+.converter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.converter-actions .input-group {
+  flex: 1;
+  min-width: 140px;
+}
+
+.converter-actions .btn {
+  white-space: nowrap;
+}
+
+/* status */
+.converter-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.converter-status .spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.converter-status.error {
+  color: var(--danger);
+}
+
+/* 3d preview */
+.converter-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+#converterViewerCanvas {
+  position: absolute;
+  inset: 0;
+}
+
+.converter-preview canvas {
+  display: block;
+}
+
+.converter-preview-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  gap: 8px;
+}
+
+.converter-preview-empty svg {
+  width: 48px;
+  height: 48px;
+  opacity: 0.4;
+}
+
+.converter-preview-empty p {
+  font-size: 13px;
+}
+
+/* format reference */
+.converter-formats {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+.converter-formats h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.converter-formats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.format-card {
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.format-card-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.format-card-desc {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.format-card-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.format-card-badge.roblox {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.format-card-badge.source {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* conversion history */
+.converter-history {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+.converter-history h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.converter-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.converter-history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.converter-history-item-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.converter-history-item-arrow {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.converter-history-item-format {
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.converter-history-item-time {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.converter-history-empty {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* responsive */
+@media (max-width: 800px) {
+  .converter-layout {
+    grid-template-columns: 1fr;
+  }
+}

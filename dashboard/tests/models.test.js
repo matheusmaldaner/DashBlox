@@ -349,6 +349,79 @@ describe('model format conversion in download', () => {
   });
 });
 
+describe('POST /api/models/convert-upload-roblox', () => {
+  const app = createApp();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // mock global fetch for roblox api
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ path: 'assets/12345' }),
+    });
+    // set roblox api key in config
+    const config = require('../server/config');
+    config.robloxApiKey = 'test-roblox-key';
+  });
+
+  afterEach(() => {
+    delete global.fetch;
+  });
+
+  test('returns 400 when no file is uploaded', async () => {
+    const res = await request(app)
+      .post('/api/models/convert-upload-roblox')
+      .field('name', 'test');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/model file is required/);
+  });
+
+  test('converts glb to fbx before uploading to roblox', async () => {
+    converter.convertBuffer.mockResolvedValue(Buffer.from('converted-fbx'));
+
+    const buf = Buffer.from('fake glb data');
+    const res = await request(app)
+      .post('/api/models/convert-upload-roblox')
+      .attach('model', buf, { filename: 'zombie.glb' })
+      .field('name', 'zombie');
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(converter.convertBuffer).toHaveBeenCalledWith(expect.any(Buffer), 'glb', 'fbx');
+    // verify roblox api was called
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://apis.roblox.com/assets/v1/assets',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
+  test('skips conversion for fbx files', async () => {
+    const buf = Buffer.from('fake fbx data');
+    const res = await request(app)
+      .post('/api/models/convert-upload-roblox')
+      .attach('model', buf, { filename: 'zombie.fbx' })
+      .field('name', 'zombie');
+
+    expect(res.status).toBe(200);
+    expect(converter.convertBuffer).not.toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalled();
+  });
+
+  test('returns 503 when roblox api key not configured', async () => {
+    const config = require('../server/config');
+    config.robloxApiKey = '';
+
+    const buf = Buffer.from('fake glb data');
+    const res = await request(app)
+      .post('/api/models/convert-upload-roblox')
+      .attach('model', buf, { filename: 'zombie.glb' });
+
+    expect(res.status).toBe(503);
+    expect(res.body.error).toMatch(/ROBLOX_API_KEY/);
+  });
+});
+
 describe('POST /api/models/convert', () => {
   const app = createApp();
 

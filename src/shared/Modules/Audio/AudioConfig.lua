@@ -89,7 +89,7 @@ AudioConfig.Building = {
 	rotate = "rbxassetid://876939830",
 	select = "rbxassetid://876939830",
 	invalid = "rbxassetid://876939830",
-	outOfMaterials = "rbxassetid://9118823805",
+	outOfMaterials = "rbxassetid://876939830", -- alert click
 }
 
 --------------------------------------------------
@@ -128,7 +128,7 @@ AudioConfig.Movement = {
 AudioConfig.Combat = {
 	hitMarker = "rbxassetid://5952120301", -- COD Hit Marker sound
 	headshot = "rbxassetid://1129547534", -- MLG Hitmarker (distinct for headshot)
-	kill = "rbxassetid://9118823805", -- Victory Sound Effect
+	kill = "rbxassetid://5952120301", -- kill confirm (reused hit marker)
 	shieldBreak = "rbxassetid://9064974448", -- Breaking/shatter sound
 	shieldHit = "rbxassetid://876939830", -- Shield absorb
 	lowHealthHeartbeat = "rbxassetid://6724333590", -- Heartbeat Sound (Slow to fast)
@@ -166,13 +166,13 @@ AudioConfig.UI = {
 	click = "rbxassetid://876939830",
 	hover = "rbxassetid://876939830",
 	queueStart = "rbxassetid://876939830",
-	matchFound = "rbxassetid://9118823805", -- Victory fanfare for match found
+	matchFound = "rbxassetid://172905765", -- beep alert for match found
 	countdown = "rbxassetid://172905765", -- Short Beep - Heart rate Monitor
-	roundStart = "rbxassetid://9118823805", -- Fanfare
-	victory = "rbxassetid://9118823805", -- Victory Sound Effect
+	roundStart = "rbxassetid://172905765", -- beep for round start
+	victory = "rbxassetid://1129547534", -- crisp ping for victory
 	defeat = "rbxassetid://876939830", -- Subdued click
-	levelUp = "rbxassetid://9118823805", -- Celebration sound
-	achievementUnlock = "rbxassetid://9118823805", -- Achievement jingle
+	levelUp = "rbxassetid://1129547534", -- crisp ping for level up
+	achievementUnlock = "rbxassetid://1129547534", -- crisp ping for achievement
 	notification = "rbxassetid://876939830", -- Notification pop
 }
 
@@ -195,18 +195,18 @@ AudioConfig.Pickaxe = {
 
 AudioConfig.Announcer = {
 	-- Kill streak sounds (Halo/CoD style)
-	firstBlood = "rbxassetid://9118823805", -- First kill of the match
-	elimination = "rbxassetid://9118823805", -- Standard kill notification
+	firstBlood = "rbxassetid://5952120301", -- hit marker for first blood
+	elimination = "rbxassetid://5952120301", -- hit marker for elimination
 	headshot = "rbxassetid://1129547534", -- Headshot kill (crisp ping)
-	doubleKill = "rbxassetid://9118823805", -- 2 kills quickly
-	tripleKill = "rbxassetid://9118823805", -- 3 kills quickly
-	multiKill = "rbxassetid://9118823805", -- 4+ kills quickly
+	doubleKill = "rbxassetid://5952120301", -- hit marker for double kill
+	tripleKill = "rbxassetid://5952120301", -- hit marker for triple kill
+	multiKill = "rbxassetid://5952120301", -- hit marker for multi kill
 
 	-- Match events
 	matchStart = "rbxassetid://172905765", -- Match beginning
 	roundStart = "rbxassetid://172905765", -- Round starting beep
 	overtime = "rbxassetid://6724333590", -- Overtime warning (tense)
-	victory = "rbxassetid://9118823805", -- You won
+	victory = "rbxassetid://1129547534", -- crisp ping for victory
 	defeat = "rbxassetid://876939830", -- You lost
 }
 
