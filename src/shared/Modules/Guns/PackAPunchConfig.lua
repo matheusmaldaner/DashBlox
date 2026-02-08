@@ -15,7 +15,7 @@ PackAPunchConfig.DamageMultiplier = 2.5
 PackAPunchConfig.MagazineSizeMultiplier = 2
 
 -- upgraded weapon display names (fun renamed versions)
-PackAPunchConfig.UpgradedNames: { [string]: string } = {
+PackAPunchConfig.UpgradedNames = {
 	["AR"] = "Augmented Reality",
 	["PumpShotgun"] = "The Impeller",
 	["SMG"] = "Shredder 9000",

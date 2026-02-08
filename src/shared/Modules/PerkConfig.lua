@@ -21,7 +21,7 @@ export type PerkStats = {
 	SelfRevive: boolean?,
 }
 
-PerkConfig.Perks: { [string]: PerkStats } = {
+PerkConfig.Perks = {
 	["Juggernog"] = {
 		Name = "Juggernog",
 		DisplayName = "Juggernog",
