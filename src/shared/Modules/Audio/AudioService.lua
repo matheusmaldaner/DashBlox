@@ -526,7 +526,7 @@ end
 -- Zombie Sound Helpers
 --------------------------------------------------
 
--- play zombie hit sound at position (flesh impact or headshot crack)
+-- play zombie hit sound at position (flesh impact or headshot)
 function AudioService.PlayZombieHit(position: Vector3, isHeadshot: boolean?): Sound?
 	local soundName = if isHeadshot then "hitHeadshot" else "hitFlesh"
 
@@ -538,13 +538,20 @@ function AudioService.PlayZombieHit(position: Vector3, isHeadshot: boolean?): So
 	local soundId = AudioConfig.GetZombieSound(soundName)
 	local range = AudioConfig.SpatialSettings.zombieRollOffMaxDistance
 
-	return AudioService.PlaySoundId(
+	local sound = AudioService.PlaySoundId(
 		soundId,
 		position,
 		AudioConfig.DefaultVolumes.Zombies,
 		range,
 		true -- pitch/volume variation for natural feel
 	)
+
+	-- headshots get a higher pitch for a snappier feel
+	if sound and isHeadshot then
+		sound.PlaybackSpeed = 1.3 + math.random() * 0.2
+	end
+
+	return sound
 end
 
 -- play zombie death sound at position
