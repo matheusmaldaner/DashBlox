@@ -1,6 +1,6 @@
 --!strict
 
--- server module: centralized zombie AI with pathfinding
+-- server module: centralized zombie AI with pathfinding + barricade breaking
 -- single heartbeat loop processes all zombies with staggered path recomputation
 -- required by ZombieSpawner.server.lua
 
@@ -34,6 +34,11 @@ local AGENT_PARAMS = {
 	AgentCanClimb = false,
 }
 
+-- barricades
+local BARRICADE_ATTACK_RANGE = 5 -- studs from barricade center to start attacking
+local BARRICADE_ATTACK_COOLDOWN = 1.0 -- seconds between barricade hits
+local BARRICADE_BROKEN_TRANSPARENCY = 0.5 -- transparency when a board is broken
+
 --------------------------------------------------
 -- Types
 --------------------------------------------------
@@ -56,6 +61,9 @@ export type ZombieData = {
 	_waypointIndex: number,
 	_pathAge: number,
 	_pathRequested: boolean,
+	-- barricade state
+	_targetBarricade: Model?,
+	_lastBarricadeAttack: number,
 }
 
 --------------------------------------------------
@@ -92,6 +100,96 @@ local function GetPlayerFromPart(part: BasePart): Player?
 		end
 	end
 	return nil
+end
+
+--------------------------------------------------
+-- Barricade System
+--------------------------------------------------
+
+-- check if a barricade still has any intact (CanCollide true) parts
+local function IsBarricadeIntact(barricade: Model): boolean
+	for _, child in barricade:GetChildren() do
+		if child:IsA("BasePart") and child.CanCollide then
+			return true
+		end
+	end
+	return false
+end
+
+-- find the closest barricade that still has intact parts
+local function FindClosestBarricade(position: Vector3): Model?
+	local barricadesFolder = workspace:FindFirstChild("Map")
+	if barricadesFolder then
+		barricadesFolder = barricadesFolder:FindFirstChild("Barricades")
+	end
+	if not barricadesFolder then
+		return nil
+	end
+
+	local closestBarricade: Model? = nil
+	local closestDistSq = math.huge
+
+	for _, barricade in barricadesFolder:GetChildren() do
+		if not barricade:IsA("Model") then
+			continue
+		end
+
+		-- skip barricades that are already fully broken
+		if not IsBarricadeIntact(barricade) then
+			continue
+		end
+
+		-- get barricade position from its PrimaryPart or first BasePart
+		local barricadePos: Vector3?
+		if barricade.PrimaryPart then
+			barricadePos = barricade.PrimaryPart.Position
+		else
+			for _, child in barricade:GetChildren() do
+				if child:IsA("BasePart") then
+					barricadePos = child.Position
+					break
+				end
+			end
+		end
+
+		if not barricadePos then
+			continue
+		end
+
+		local delta = barricadePos - position
+		local distSq = delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z
+		if distSq < closestDistSq then
+			closestDistSq = distSq
+			closestBarricade = barricade
+		end
+	end
+
+	return closestBarricade
+end
+
+-- get the center position of a barricade model
+local function GetBarricadePosition(barricade: Model): Vector3?
+	if barricade.PrimaryPart then
+		return barricade.PrimaryPart.Position
+	end
+	for _, child in barricade:GetChildren() do
+		if child:IsA("BasePart") then
+			return child.Position
+		end
+	end
+	return nil
+end
+
+-- attack a barricade: break one intact part per call
+local function AttackBarricade(barricade: Model): boolean
+	for _, child in barricade:GetChildren() do
+		if child:IsA("BasePart") and child.CanCollide then
+			child.CanCollide = false
+			child.Transparency = BARRICADE_BROKEN_TRANSPARENCY
+			return true -- broke a part
+		end
+	end
+	return false -- nothing left to break
 end
 
 --------------------------------------------------
@@ -297,22 +395,12 @@ local function EnsureHeartbeat()
 		-- step 1: cache all player positions once
 		CachePlayerPositions()
 
-		-- step 2: no alive players — idle all zombies
-		if cachedPlayerCount == 0 then
-			for i = 1, registryCount do
-				local zd = registry[i]
-				if zd.aiState ~= "dying" then
-					local rp = zd.model.PrimaryPart
-					if rp then
-						zd.humanoid:MoveTo(rp.Position)
-					end
-				end
-			end
-			return
-		end
+		-- step 2: no alive players — idle all zombies (barricade zombies still attack)
+		-- (handled per-zombie below)
 
 		-- step 3: process each zombie
 		local currentBucket = frameCounter % TARGET_REVAL_FRAMES
+		local currentTime = tick()
 
 		for i = 1, registryCount do
 			local zd = registry[i]
@@ -327,6 +415,51 @@ local function EnsureHeartbeat()
 			end
 
 			local zombiePos = rootPart.Position
+
+			-- ==========================================
+			-- BARRICADE PHASE: runs before player chase
+			-- ==========================================
+			local barricade = zd._targetBarricade
+			if barricade then
+				-- check if barricade is still intact
+				if not IsBarricadeIntact(barricade) then
+					-- barricade fully broken, switch to player targeting
+					zd._targetBarricade = nil
+					ClearPath(zd)
+				else
+					-- move toward the barricade
+					local barricadePos = GetBarricadePosition(barricade)
+					if barricadePos then
+						local delta = barricadePos - zombiePos
+						local distSq = delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z
+
+						if distSq < BARRICADE_ATTACK_RANGE * BARRICADE_ATTACK_RANGE then
+							-- in range: stop moving and attack on cooldown
+							zd.humanoid:MoveTo(zombiePos)
+
+							if (currentTime - zd._lastBarricadeAttack) >= BARRICADE_ATTACK_COOLDOWN then
+								zd._lastBarricadeAttack = currentTime
+								local broke = AttackBarricade(barricade)
+								if not broke then
+									-- nothing left, barricade is done
+									zd._targetBarricade = nil
+									ClearPath(zd)
+								end
+							end
+						else
+							-- walk toward barricade
+							zd.humanoid:MoveTo(barricadePos)
+						end
+					end
+
+					-- skip player targeting while focused on barricade
+					continue
+				end
+			end
+
+			-- ==========================================
+			-- PLAYER CHASE PHASE (normal behavior)
+			-- ==========================================
 
 			-- staggered target re-evaluation
 			if currentBucket == zd._staggerBucket then
@@ -417,6 +550,15 @@ function ZombieAI.StartAI(zombieData: ZombieData)
 	zombieData._pathAge = 0
 	zombieData._pathRequested = false
 
+	-- initialize barricade targeting: find closest intact barricade (checked once)
+	zombieData._lastBarricadeAttack = 0
+	local rootPart = zombieData.model.PrimaryPart
+	if rootPart then
+		zombieData._targetBarricade = FindClosestBarricade(rootPart.Position)
+	else
+		zombieData._targetBarricade = nil
+	end
+
 	-- set up touch damage
 	SetupTouchDamage(zombieData)
 
@@ -437,6 +579,7 @@ function ZombieAI.StopAI(zombieData: ZombieData)
 	-- clear path data
 	ClearPath(zombieData)
 	zombieData._pathRequested = false
+	zombieData._targetBarricade = nil
 
 	-- swap-and-pop removal from registry (O(1))
 	local idx = zombieData._registryIndex

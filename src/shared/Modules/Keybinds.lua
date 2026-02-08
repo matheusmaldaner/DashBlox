@@ -19,7 +19,6 @@ local keybinds: { [string]: Enum.KeyCode | string } = {
 	crouch = "LeftControl",
 	crouchToggle = "C",
 	dropItem = "Z",
-	launch = "P",
 	-- menus
 	quests = "J",
 	settings = "Tab",
@@ -93,7 +92,6 @@ local actionDisplayNames: { [string]: string } = {
 	crouch = "Crouch (Hold)",
 	crouchToggle = "Crouch (Toggle)",
 	dropItem = "Drop Item",
-	launch = "Launch",
 	quests = "Quests",
 	settings = "Settings",
 	achievements = "Achievements",
@@ -109,7 +107,7 @@ end
 function Keybinds.GetCategories(): { { name: string, actions: { string } } }
 	return {
 		{ name = "Combat", actions = { "weapon1", "weapon2", "weapon3", "weapon4", "weapon5", "reload", "dropItem" } },
-		{ name = "Movement", actions = { "sprint", "crouch", "crouchToggle", "launch" } },
+		{ name = "Movement", actions = { "sprint", "crouch", "crouchToggle" } },
 		{ name = "Menus", actions = { "quests", "settings", "achievements", "queue", "locker" } },
 	}
 end
