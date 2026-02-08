@@ -69,6 +69,7 @@ local function SetupRepairZone(repairPart: BasePart)
 
 	repairToBarricade[repairPart] = barricade :: Model
 	playersInZone[repairPart] = {}
+	print("[BarricadeService] Registered repair zone:", repairPart:GetFullName(), "| Barricade:", barricade.Name)
 
 	repairPart.Touched:Connect(function(hit: BasePart)
 		local player = GetPlayerFromPart(hit)
@@ -78,6 +79,7 @@ local function SetupRepairZone(repairPart: BasePart)
 		local zone = playersInZone[repairPart]
 		if zone then
 			zone[player] = true
+			print("[BarricadeService] Player ENTERED repair zone:", player.Name, "| Barricade:", barricade:GetFullName())
 		end
 	end)
 
@@ -89,6 +91,7 @@ local function SetupRepairZone(repairPart: BasePart)
 		local zone = playersInZone[repairPart]
 		if zone then
 			zone[player] = nil
+			print("[BarricadeService] Player LEFT repair zone:", player.Name, "| Barricade:", barricade:GetFullName())
 		end
 	end)
 end
@@ -161,6 +164,9 @@ task.spawn(function()
 				if brokenPart then
 					brokenPart.CanCollide = true
 					brokenPart.Transparency = 0
+					print("[BarricadeService] REPAIRED part:", brokenPart.Name, "| Barricade:", barricade:GetFullName(), "| By:", player.Name)
+				else
+					print("[BarricadeService] No broken parts to repair | Barricade:", barricade:GetFullName(), "| Player:", player.Name)
 				end
 			end
 		end
