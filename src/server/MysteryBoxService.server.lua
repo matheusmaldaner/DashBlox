@@ -189,13 +189,14 @@ local function DiscoverBoxModel()
 		boxPrompt = boxModel:FindFirstChildOfClass("ProximityPrompt")
 		if not boxPrompt then
 			boxPrompt = Instance.new("ProximityPrompt")
-			(boxPrompt :: ProximityPrompt).ObjectText = MysteryBoxConfig.BoxPromptText
-			(boxPrompt :: ProximityPrompt).ActionText = MysteryBoxConfig.BoxActionText
+			local prompt = boxPrompt :: ProximityPrompt
+			prompt.ObjectText = MysteryBoxConfig.BoxPromptText
+			prompt.ActionText = MysteryBoxConfig.BoxActionText
 				.. " [" .. tostring(MysteryBoxConfig.Cost) .. "]"
-			(boxPrompt :: ProximityPrompt).MaxActivationDistance = MysteryBoxConfig.BoxMaxDistance
-			(boxPrompt :: ProximityPrompt).HoldDuration = 0
-			(boxPrompt :: ProximityPrompt).RequiresLineOfSight = false
-			(boxPrompt :: ProximityPrompt).Parent = boxModel
+			prompt.MaxActivationDistance = MysteryBoxConfig.BoxMaxDistance
+			prompt.HoldDuration = 0
+			prompt.RequiresLineOfSight = false
+			prompt.Parent = boxModel
 		end
 	else
 		warn("[MysteryBox] no model tagged 'MysteryBox' found")

@@ -110,8 +110,9 @@ local function StartCyclingAnimation(boxModel: Model)
 			local rarityColor = MysteryBoxConfig.RarityColors[rarity]
 				or Color3.fromRGB(255, 255, 255)
 
-			(cyclingLabel :: TextLabel).Text = displayName
-			(cyclingLabel :: TextLabel).TextColor3 = rarityColor
+			local label = cyclingLabel :: TextLabel
+			label.Text = displayName
+			label.TextColor3 = rarityColor
 
 			-- decelerate: lerp from start interval to end interval
 			local alpha = i / flashCount
