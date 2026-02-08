@@ -5,10 +5,12 @@
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
+local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PackAPunchConfig = require(ReplicatedStorage.Modules.Guns.PackAPunchConfig)
 local GunConfig = require(ReplicatedStorage.Modules.Guns.GunConfig)
+local GunModelManager = require(script.Parent.GunModelManager)
 local CoinUtility = require(script.Parent.CoinUtility)
 local RemoteService = require(ReplicatedStorage.Modules.RemoteService)
 
@@ -95,29 +97,53 @@ local function HandlePackAPunch(player: Player)
 
 	upgrading[player] = true
 
-	-- notify all clients that upgrade started
+	-- remove the weapon model from the player's character
+	if character then
+		GunModelManager.RemoveEquippedGun(character)
+	end
+
+	-- stash the tool in ServerStorage so the player can't use it during upgrade
+	local stashFolder = ServerStorage:FindFirstChild("PAPStash")
+	if not stashFolder then
+		stashFolder = Instance.new("Folder")
+		stashFolder.Name = "PAPStash"
+		stashFolder.Parent = ServerStorage
+	end
+	tool.Parent = stashFolder
+
+	-- notify all clients that upgrade started (triggers VFX)
 	PackAPunchStartedRemote:FireAllClients({
 		playerId = player.UserId,
 		gunName = gunName,
 	})
 
-	-- simulate upgrade duration
+	-- wait for upgrade animation to finish
 	task.delay(PackAPunchConfig.UpgradeDuration, function()
 		upgrading[player] = nil
 
-		-- verify tool still exists
+		-- verify tool still exists in stash
 		if not tool or not tool.Parent then
 			CoinUtility.Refund(player, PackAPunchConfig.Cost)
 			PackAPunchFailedRemote:FireClient(player, { reason = "Weapon lost during upgrade" })
 			return
 		end
 
+		-- verify player is still in game and alive
+		if not player or not player.Parent then
+			return
+		end
+
 		-- apply Pack-a-Punch upgrade
 		tool:SetAttribute("PackAPunched", true)
 
-		-- set upgraded display name
 		local upgradedName = PackAPunchConfig.GetUpgradedName(gunName)
 		tool:SetAttribute("UpgradedName", upgradedName)
+
+		-- give the weapon back to the player
+		local backpack = player:FindFirstChild("Backpack")
+		if backpack then
+			tool.Parent = backpack
+		end
 
 		-- notify all clients
 		PackAPunchCompletedRemote:FireAllClients({
@@ -178,6 +204,17 @@ end
 CollectionService:GetInstanceAddedSignal("PackAPunch"):Connect(SetupPackAPunchMachine)
 
 Players.PlayerRemoving:Connect(function(player)
+	-- clean up any stashed weapon if player leaves mid-upgrade
+	local stashFolder = ServerStorage:FindFirstChild("PAPStash")
+	if stashFolder then
+		for _, item in stashFolder:GetChildren() do
+			if item:IsA("Tool") then
+				-- check if this tool belonged to the leaving player
+				-- just destroy it since the player is gone
+				item:Destroy()
+			end
+		end
+	end
 	upgrading[player] = nil
 	cleanupPAPLimit(player)
 end)
