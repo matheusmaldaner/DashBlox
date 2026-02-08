@@ -126,6 +126,10 @@ local remoteRegistry: { [string]: string } = {
 	["MysteryBoxRelocate"] = "RemoteEvent",   -- server -> all clients: teddy bear, box moving
 	["MysteryBoxReappear"] = "RemoteEvent",   -- server -> all clients: box appeared at new location
 
+	-- Coin system
+	["GiveTestCoins"] = "RemoteEvent",        -- client -> server: dev testing, give coins
+	["CoinsChanged"] = "RemoteEvent",         -- server -> client: coin count updated
+
 	-- Cosmetics/Locker system
 	["GetCosmetics"] = "RemoteFunction", -- get player's cosmetic data
 	["EquipCosmetic"] = "RemoteFunction", -- equip item (returns success)
