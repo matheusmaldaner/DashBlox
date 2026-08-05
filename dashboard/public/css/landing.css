@@ -30,48 +30,48 @@ body {
 }
 
 :root {
-  --landing-nav-bg: rgba(0, 0, 0, 0.4);
-  --landing-nav-bg-scrolled: rgba(0, 0, 0, 0.72);
+  --landing-nav-bg: #0a0a0a;
+  --landing-nav-bg-scrolled: #0d0d0d;
   --landing-nav-border: rgba(255, 255, 255, 0.06);
-  --button-ghost-bg: rgba(255, 255, 255, 0.06);
-  --button-ghost-bg-hover: rgba(255, 255, 255, 0.1);
+  --button-ghost-bg: #1a1a1a;
+  --button-ghost-bg-hover: #242424;
   --button-ghost-border: rgba(255, 255, 255, 0.1);
   --button-ghost-border-hover: rgba(255, 255, 255, 0.2);
-  --card-bg-start: rgba(255, 255, 255, 0.06);
-  --card-bg-end: rgba(255, 255, 255, 0.02);
+  --card-bg-start: #141414;
+  --card-bg-end: #141414;
   --card-border: rgba(255, 255, 255, 0.08);
   --card-top-line: rgba(255, 255, 255, 0.2);
-  --tag-bg: rgba(255, 255, 255, 0.04);
+  --tag-bg: #161616;
   --tag-border: rgba(255, 255, 255, 0.06);
   --footer-divider: rgba(255, 255, 255, 0.06);
   --video-fade-top: #000000;
   --video-overlay-end: rgba(0, 0, 0, 0.7);
   --video-caption-text: rgba(255, 255, 255, 0.95);
-  --video-caption-bg: rgba(0, 0, 0, 0.34);
+  --video-caption-bg: #111111;
   --video-caption-border: rgba(255, 255, 255, 0.22);
   --video-caption-shadow: 0 10px 34px rgba(0, 0, 0, 0.3);
   --accent-contrast: #000;
 }
 
 [data-theme="light"] {
-  --landing-nav-bg: rgba(255, 255, 255, 0.58);
-  --landing-nav-bg-scrolled: rgba(255, 255, 255, 0.9);
+  --landing-nav-bg: #ffffff;
+  --landing-nav-bg-scrolled: #ffffff;
   --landing-nav-border: rgba(15, 23, 42, 0.08);
-  --button-ghost-bg: rgba(255, 255, 255, 0.66);
-  --button-ghost-bg-hover: rgba(255, 255, 255, 0.85);
+  --button-ghost-bg: #ffffff;
+  --button-ghost-bg-hover: #f0f0f2;
   --button-ghost-border: rgba(15, 23, 42, 0.12);
   --button-ghost-border-hover: rgba(15, 23, 42, 0.22);
-  --card-bg-start: rgba(255, 255, 255, 0.9);
-  --card-bg-end: rgba(255, 255, 255, 0.72);
+  --card-bg-start: #ffffff;
+  --card-bg-end: #ffffff;
   --card-border: rgba(15, 23, 42, 0.1);
   --card-top-line: rgba(15, 23, 42, 0.14);
-  --tag-bg: rgba(15, 23, 42, 0.04);
+  --tag-bg: #ebecee;
   --tag-border: rgba(15, 23, 42, 0.1);
   --footer-divider: rgba(15, 23, 42, 0.12);
   --video-fade-top: #f5f5f7;
   --video-overlay-end: rgba(255, 255, 255, 0.52);
   --video-caption-text: #111827;
-  --video-caption-bg: rgba(255, 255, 255, 0.7);
+  --video-caption-bg: #ffffff;
   --video-caption-border: rgba(15, 23, 42, 0.14);
   --video-caption-shadow: 0 10px 34px rgba(15, 23, 42, 0.16);
   --accent-contrast: #04130d;
@@ -149,8 +149,6 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 16px 40px;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   background: var(--landing-nav-bg);
   border-bottom: 1px solid var(--landing-nav-border);
   transition: background 0.3s ease;
@@ -217,7 +215,7 @@ body {
   width: 38px;
   height: 38px;
   padding: 0;
-  border-radius: 999px;
+  border-radius: 8px;
   border: 1px solid var(--button-ghost-border);
   background: var(--button-ghost-bg);
   color: var(--text-primary);
@@ -268,7 +266,7 @@ body {
 .hero-badge {
   display: inline-block;
   padding: 6px 16px;
-  border-radius: 100px;
+  border-radius: 8px;
   background: var(--accent-dim);
   border: 1px solid rgba(52, 211, 153, 0.2);
   color: var(--accent);
@@ -295,7 +293,7 @@ body {
 }
 
 .hero-title-accent {
-  background: linear-gradient(135deg, var(--accent) 0%, #6366f1 50%, #a855f7 100%);
+  background: var(--accent);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -349,7 +347,6 @@ body {
   background: var(--button-ghost-bg);
   color: var(--text-primary);
   border: 1px solid var(--button-ghost-border);
-  backdrop-filter: blur(10px);
 }
 
 .hero-btn--ghost:hover {
@@ -401,7 +398,7 @@ body {
   top: -12vh;
   height: 12vh;
   pointer-events: none;
-  background: linear-gradient(to bottom, transparent 0%, #fff 100%);
+  background: transparent;
 }
 
 /* video section - no fixed height; scrolltrigger manages pin spacing */
@@ -453,7 +450,7 @@ body {
   align-items: flex-end;
   justify-content: center;
   padding: 60px;
-  background: linear-gradient(180deg, transparent 60%, var(--video-overlay-end) 100%);
+  background: transparent;
   pointer-events: none;
 }
 
@@ -464,11 +461,9 @@ body {
   text-align: center;
   max-width: 500px;
   padding: 14px 22px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--video-caption-bg);
   border: 1px solid var(--video-caption-border);
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
   box-shadow: var(--video-caption-shadow);
   opacity: 0;
   transform: translateY(10px);
@@ -501,15 +496,9 @@ body {
 .features-glass {
   position: relative;
   padding: 56px 48px 56px;
-  border-radius: 32px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.06) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
+  border-radius: 12px;
+  background: var(--glass-bg);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -523,14 +512,7 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.2) 30%,
-    rgba(255, 255, 255, 0.3) 50%,
-    rgba(255, 255, 255, 0.2) 70%,
-    transparent 100%
-  );
+  background: transparent;
 }
 
 .features-glass::after {
@@ -540,20 +522,12 @@ body {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(
-    ellipse at 30% 20%,
-    rgba(52, 211, 153, 0.04) 0%,
-    transparent 50%
-  );
+  background: none;
   pointer-events: none;
 }
 
 [data-theme="light"] .features-glass {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.65) 0%,
-    rgba(255, 255, 255, 0.4) 100%
-  );
+  background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.06),
@@ -562,22 +536,11 @@ body {
 }
 
 [data-theme="light"] .features-glass::before {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.7) 30%,
-    rgba(255, 255, 255, 0.9) 50%,
-    rgba(255, 255, 255, 0.7) 70%,
-    transparent 100%
-  );
+  background: transparent;
 }
 
 [data-theme="light"] .features-glass::after {
-  background: radial-gradient(
-    ellipse at 30% 20%,
-    rgba(16, 185, 129, 0.05) 0%,
-    transparent 50%
-  );
+  background: none;
 }
 
 .section-title {
@@ -609,14 +572,8 @@ body {
   position: relative;
   padding: 36px 32px;
   border-radius: var(--radius-xl);
-  background: linear-gradient(
-    135deg,
-    var(--card-bg-start) 0%,
-    var(--card-bg-end) 100%
-  );
+  background: var(--card-bg-start);
   border: 1px solid var(--card-border);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   transition: transform 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
   overflow: hidden;
   opacity: 0;
@@ -630,12 +587,7 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--card-top-line),
-    transparent
-  );
+  background: transparent;
 }
 
 .feature-card:hover {
@@ -687,7 +639,7 @@ body {
 
 .feature-card-tags span {
   padding: 4px 10px;
-  border-radius: 100px;
+  border-radius: 8px;
   background: var(--tag-bg);
   border: 1px solid var(--tag-border);
   font-size: 0.72rem;
@@ -710,15 +662,8 @@ body {
   align-items: center;
   position: relative;
   padding: 56px 48px;
-  border-radius: 24px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.07) 0%,
-    rgba(255, 255, 255, 0.03) 50%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-radius: 12px;
+  background: var(--glass-bg);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
     0 8px 40px rgba(0, 0, 0, 0.2),
@@ -736,13 +681,9 @@ body {
   left: 0;
   right: 0;
   height: 50%;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: transparent;
   pointer-events: none;
-  border-radius: 24px 24px 0 0;
+  border-radius: 12px 12px 0 0;
 }
 
 /* top edge shine */
@@ -753,23 +694,13 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0.35),
-    rgba(255, 255, 255, 0)
-  );
+  background: transparent;
   pointer-events: none;
 }
 
 /* light theme liquid glass */
 [data-theme="light"] .about-content {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.65) 0%,
-    rgba(255, 255, 255, 0.4) 50%,
-    rgba(255, 255, 255, 0.55) 100%
-  );
+  background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     0 8px 40px rgba(0, 0, 0, 0.06),
@@ -779,20 +710,11 @@ body {
 }
 
 [data-theme="light"] .about-content::before {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: transparent;
 }
 
 [data-theme="light"] .about-content::after {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 1),
-    rgba(255, 255, 255, 0)
-  );
+  background: transparent;
 }
 
 .about-desc {
@@ -849,13 +771,8 @@ body {
   gap: 16px;
   padding: 48px;
   border-radius: var(--radius-xl);
-  background: linear-gradient(
-    135deg,
-    var(--card-bg-start) 0%,
-    var(--card-bg-end) 100%
-  );
+  background: var(--card-bg-start);
   border: 1px solid var(--card-border);
-  backdrop-filter: blur(20px);
 }
 
 .about-uf-logo {
@@ -881,15 +798,8 @@ body {
 .team-content {
   position: relative;
   padding: 56px 48px;
-  border-radius: 24px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.07) 0%,
-    rgba(255, 255, 255, 0.03) 50%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-radius: 12px;
+  background: var(--glass-bg);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
     0 8px 40px rgba(0, 0, 0, 0.2),
@@ -907,13 +817,9 @@ body {
   left: 0;
   right: 0;
   height: 50%;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: transparent;
   pointer-events: none;
-  border-radius: 24px 24px 0 0;
+  border-radius: 12px 12px 0 0;
 }
 
 /* top edge shine */
@@ -924,23 +830,13 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0.35),
-    rgba(255, 255, 255, 0)
-  );
+  background: transparent;
   pointer-events: none;
 }
 
 /* light theme liquid glass */
 [data-theme="light"] .team-content {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.65) 0%,
-    rgba(255, 255, 255, 0.4) 50%,
-    rgba(255, 255, 255, 0.55) 100%
-  );
+  background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     0 8px 40px rgba(0, 0, 0, 0.06),
@@ -950,20 +846,11 @@ body {
 }
 
 [data-theme="light"] .team-content::before {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: transparent;
 }
 
 [data-theme="light"] .team-content::after {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 1),
-    rgba(255, 255, 255, 0)
-  );
+  background: transparent;
 }
 
 .team-grid {
@@ -1020,7 +907,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--accent-dim) 0%, rgba(99, 102, 241, 0.15) 100%);
+  background: var(--accent-dim);
   border: 2px solid rgba(52, 211, 153, 0.2);
   border-radius: 50%;
 }
@@ -1090,7 +977,7 @@ body {
   right: 0;
   top: -28vh;
   height: 28vh;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, var(--bg-primary) 100%);
+  background: transparent;
   pointer-events: none;
 }
 
@@ -1183,7 +1070,7 @@ body {
 
   .features-glass {
     padding: 40px 24px;
-    border-radius: 24px;
+    border-radius: 12px;
   }
 
   .features-grid {

@@ -189,13 +189,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* audio card */
 .audio-card {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.03) 100%
-  );
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--glass-bg);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-lg);
   padding: 16px;
@@ -211,11 +205,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 [data-theme="light"] .audio-card {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.7) 0%,
-    rgba(255, 255, 255, 0.5) 100%
-  );
+  background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 

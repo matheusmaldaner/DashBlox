@@ -28,14 +28,12 @@
       'gap: 12px',
       'max-width: min(92vw, 560px)',
       'padding: 12px 18px',
-      'border-radius: 14px',
+      'border-radius: 8px',
       'font-size: 13px',
       'line-height: 1.5',
       'color: var(--text-primary, #e5e7eb)',
-      'background: var(--glass-bg, rgba(30, 30, 40, 0.7))',
-      'border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12))',
-      'backdrop-filter: blur(16px)',
-      '-webkit-backdrop-filter: blur(16px)',
+      'background: var(--glass-bg, #1c1c22)',
+      'border: 1px solid var(--glass-border, #3a3a42)',
       'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25)',
     ].join(';');
 

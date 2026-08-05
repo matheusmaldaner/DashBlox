@@ -21,24 +21,14 @@
   flex-wrap: wrap;
   flex-shrink: 0;
   z-index: 10;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.03) 100%
-  );
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--glass-bg);
   border-radius: var(--radius-xl);
   border: 1px solid rgba(255, 255, 255, 0.12);
   margin-bottom: 16px;
 }
 
 [data-theme="light"] .docs-toolbar {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.7) 100%
-  );
+  background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
 

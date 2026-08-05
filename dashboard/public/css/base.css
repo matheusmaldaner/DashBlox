@@ -145,11 +145,7 @@ a:hover {
   right: 0;
   bottom: 0;
   z-index: -1;
-  background:
-    radial-gradient(ellipse 100% 80% at 10% 20%, rgba(52, 211, 153, 0.25) 0%, transparent 50%),
-    radial-gradient(ellipse 80% 60% at 90% 30%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
-    radial-gradient(ellipse 70% 50% at 50% 90%, rgba(52, 211, 153, 0.18) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 30% 70%, rgba(168, 85, 247, 0.12) 0%, transparent 50%);
+  background: none;
   pointer-events: none;
   animation: glassBgShift 20s ease-in-out infinite alternate;
   transition: background var(--transition-theme);
@@ -165,22 +161,12 @@ a:hover {
 }
 
 [data-theme="light"] .glass-bg {
-  background:
-    radial-gradient(ellipse 100% 80% at 10% 20%, rgba(16, 185, 129, 0.18) 0%, transparent 50%),
-    radial-gradient(ellipse 80% 60% at 90% 30%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse 70% 50% at 50% 90%, rgba(16, 185, 129, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 30% 70%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+  background: none;
 }
 
 /* glassmorphism utility classes */
 .glass-panel {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background: var(--glass-bg);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: var(--radius-xl);
   position: relative;
@@ -201,11 +187,7 @@ a:hover {
   left: 0;
   right: 0;
   height: 50%;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: transparent;
   pointer-events: none;
 }
 
@@ -217,20 +199,11 @@ a:hover {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0.4),
-    rgba(255, 255, 255, 0)
-  );
+  background: transparent;
 }
 
 [data-theme="light"] .glass-panel {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.6) 100%
-  );
+  background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.1),
@@ -240,20 +213,11 @@ a:hover {
 }
 
 [data-theme="light"] .glass-panel::before {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.6) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: transparent;
 }
 
 [data-theme="light"] .glass-panel::after {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 1),
-    rgba(255, 255, 255, 0)
-  );
+  background: transparent;
 }
 
 /* page load animation */
