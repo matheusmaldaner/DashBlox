@@ -3,7 +3,7 @@
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
-const THEME_STORAGE_KEY = 'landing-theme';
+const THEME_STORAGE_KEY = 'roblox-dashboard-theme';
 const VIDEO_FALLBACK_SOURCE = '/assets/video-white-background-kf1.mp4';
 const THEME_VIDEO_SOURCES = {
   light: '/assets/video-white-background-kf1.mp4',
@@ -18,10 +18,6 @@ function initThemeToggle(onThemeChange) {
     root.setAttribute('data-theme', theme);
     if (toggle) {
       toggle.setAttribute('aria-pressed', String(theme === 'dark'));
-      toggle.setAttribute(
-        'aria-label',
-        theme === 'dark' ? 'Activate light mode' : 'Activate dark mode'
-      );
     }
     if (persist) {
       localStorage.setItem(THEME_STORAGE_KEY, theme);

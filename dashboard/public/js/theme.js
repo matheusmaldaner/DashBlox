@@ -9,11 +9,7 @@
   }
 
   function setTheme(theme) {
-    if (theme === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
+    document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
     localStorage.setItem(THEME_KEY, theme);
   }
 
